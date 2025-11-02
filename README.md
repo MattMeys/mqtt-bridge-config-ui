@@ -1,0 +1,11 @@
+
+  # MQTT Bridge Configuration UI improved
+
+  This is a code bundle for MQTT Bridge Configuration UI improved. The original project is available at https://www.figma.com/design/YdgbzQUl5u5550Kv88Jw7G/MQTT-Bridge-Configuration-UI-improved.
+
+  ## Running the code
+
+  Run `npm i` to install the dependencies.
+
+  Run `npm run dev` to start the development server.
+  
