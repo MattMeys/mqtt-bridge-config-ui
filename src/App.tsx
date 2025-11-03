@@ -9,6 +9,8 @@ import { toast } from "sonner@2.0.3";
 import { Toaster } from "./components/ui/sonner";
 import logo from "figma:asset/0edd3e9239d6ff6f8f9c5985d785e309773e3d03.png";
 
+import sampleConfig from "./assets/mqtt-bridges-config_sample.json"; 
+
 export default function App() {
   const [config, setConfig] = useState<BridgesConfig>({
     bridges: [{ ...defaultBridge }],
@@ -16,6 +18,25 @@ export default function App() {
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [hasAttemptedValidation, setHasAttemptedValidation] = useState(false);
+
+  // load sample config from server assets on first render
+  useEffect(() => {
+    const loadSample = async () => {
+      try {
+        const imported = sampleConfig;
+        if (imported && imported.bridges && Array.isArray(imported.bridges) && imported.bridges.length > 0) {
+          setConfig(imported as BridgesConfig);
+          setValidationErrors([]);
+          setHasAttemptedValidation(false);
+          toast.success("Sample configuration loaded from assets");
+        }
+      } catch {
+        toast.error("Failed to load sample configuration from assets");
+      }
+    };
+
+    loadSample();
+  }, []);
 
   const addBridge = () => {
     setConfig({
@@ -106,16 +127,10 @@ export default function App() {
     return errors.length === 0;
   };
 
-  const exportConfig = () => {
-    if (!validateConfig()) {
-      toast.error("Configuration has validation errors", {
-        description: "Please fix the errors before exporting",
-      });
-      return;
-    }
 
-    // Clean up the config to match the JSON schema
-    const cleanConfig = {
+  // build cleaned config to use in export/view/save
+  const buildCleanConfig = () => {
+    return {
       bridges: config.bridges.map(bridge => {
         const cleanBridge: any = {
           name: bridge.name,
@@ -130,27 +145,22 @@ export default function App() {
               topics: broker.topics,
             };
 
-            // Add disabled if true
             if (broker.disabled) {
               cleanBroker.disabled = broker.disabled;
             }
 
-            // Add session_store only if it's not empty
             if (broker.session_store) {
               cleanBroker.session_store = broker.session_store;
             }
 
-            // Add prefix if it's not empty
             if (broker.prefix) {
               cleanBroker.prefix = broker.prefix;
             }
 
-            // Add mqtt only if it exists
             if (broker.mqtt) {
               cleanBroker.mqtt = broker.mqtt;
             }
 
-            // Add the protocol-specific address fields
             switch (broker.network.protocol) {
               case "in":
                 if (broker.network.in) cleanBroker.network.in = broker.network.in;
@@ -173,12 +183,10 @@ export default function App() {
           }),
         };
 
-        // Add disabled if true
         if (bridge.disabled) {
           cleanBridge.disabled = bridge.disabled;
         }
 
-        // Add prefix if it's not empty
         if (bridge.prefix) {
           cleanBridge.prefix = bridge.prefix;
         }
@@ -186,6 +194,19 @@ export default function App() {
         return cleanBridge;
       }),
     };
+  };
+
+
+  const exportConfig = () => {
+    if (!validateConfig()) {
+      toast.error("Configuration has validation errors", {
+        description: "Please fix the errors before exporting",
+      });
+      return;
+    }
+
+    // Clean up the config to match the JSON schema
+    const cleanConfig = buildCleanConfig();
 
     const jsonString = JSON.stringify(cleanConfig, null, 2);
     const blob = new Blob([jsonString], { type: "application/json" });
@@ -236,78 +257,7 @@ export default function App() {
       return;
     }
 
-    // Clean up the config to match the JSON schema
-    const cleanConfig = {
-      bridges: config.bridges.map(bridge => {
-        const cleanBridge: any = {
-          name: bridge.name,
-          brokers: bridge.brokers.map(broker => {
-            const cleanBroker: any = {
-              network: {
-                instance_name: broker.network.instance_name,
-                protocol: broker.network.protocol,
-                encryption: broker.network.encryption,
-                transport: broker.network.transport,
-              },
-              topics: broker.topics,
-            };
-
-            // Add disabled if true
-            if (broker.disabled) {
-              cleanBroker.disabled = broker.disabled;
-            }
-
-            // Add session_store only if it's not empty
-            if (broker.session_store) {
-              cleanBroker.session_store = broker.session_store;
-            }
-
-            // Add prefix if it's not empty
-            if (broker.prefix) {
-              cleanBroker.prefix = broker.prefix;
-            }
-
-            // Add mqtt only if it exists
-            if (broker.mqtt) {
-              cleanBroker.mqtt = broker.mqtt;
-            }
-
-            // Add the protocol-specific address fields
-            switch (broker.network.protocol) {
-              case "in":
-                if (broker.network.in) cleanBroker.network.in = broker.network.in;
-                break;
-              case "in6":
-                if (broker.network.in6) cleanBroker.network.in6 = broker.network.in6;
-                break;
-              case "rc":
-                if (broker.network.rc) cleanBroker.network.rc = broker.network.rc;
-                break;
-              case "l2":
-                if (broker.network.l2) cleanBroker.network.l2 = broker.network.l2;
-                break;
-              case "un":
-                if (broker.network.un) cleanBroker.network.un = broker.network.un;
-                break;
-            }
-
-            return cleanBroker;
-          }),
-        };
-
-        // Add disabled if true
-        if (bridge.disabled) {
-          cleanBridge.disabled = bridge.disabled;
-        }
-
-        // Add prefix if it's not empty
-        if (bridge.prefix) {
-          cleanBridge.prefix = bridge.prefix;
-        }
-
-        return cleanBridge;
-      }),
-    };
+    const cleanConfig = buildCleanConfig();
 
     const jsonString = JSON.stringify(cleanConfig, null, 2);
     const newWindow = window.open("", "_blank");
@@ -341,6 +291,43 @@ export default function App() {
     }
   };
 
+  
+  
+  
+  // Save to assets: attempts to save directly (File System Access API) or falls back to download.
+  const saveConfigToAssets = async () => {
+    if (!validateConfig()) {
+      toast.error("Configuration has validation errors", {
+        description: "Please fix errors before saving",
+      });
+      return;
+    }
+
+    const cleanConfig = buildCleanConfig();
+    const jsonString = JSON.stringify(cleanConfig, null, 2);
+    
+    // Try saving to the server assets folder via API
+    try {
+      const res = await fetch("/api/save-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: jsonString,
+      });
+      if (res.ok) {
+        toast.success("Configuration saved to server assets/mqtt-bridges-config.json");
+        return;
+      } else {
+        const text = await res.text().catch(() => res.statusText || "server error");
+        toast.error("Server save failed", { description: text });
+        // continue to fallbacks
+      }
+    } catch (err) {
+      // fetch failed - server likely not running; fall back to client options below
+    }
+  }
+
+
+
   return (
     <div className="min-h-screen bg-background">
       <Toaster />
@@ -371,10 +358,16 @@ export default function App() {
                 <Download className="h-4 w-4 mr-2" />
                 Export Config
               </Button>
+              <Button onClick={saveConfigToAssets} variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Save (assets)
+              </Button>
             </div>
           </div>
         </div>
       </div>
+
+
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
