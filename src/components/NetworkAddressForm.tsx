@@ -5,48 +5,42 @@ import { Label } from "./ui/label";
 interface NetworkAddressFormProps {
   network: Network;
   onChange: (network: Network) => void;
+  onSave: () => void;
 }
 
-export function NetworkAddressForm({ network, onChange }: NetworkAddressFormProps) {
+export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddressFormProps) {
   const updateProtocolField = (protocol: Protocol, field: string, value: string | number) => {
     const updatedNetwork = { ...network };
-    
-    // Clear all protocol-specific fields first
-    delete updatedNetwork.in;
-    delete updatedNetwork.in6;
-    delete updatedNetwork.rc;
-    delete updatedNetwork.l2;
-    delete updatedNetwork.un;
     
     // Update the specific protocol field
     switch (protocol) {
       case "in":
         updatedNetwork.in = {
-          ...(updatedNetwork.in || { host: "", port: 1883 }),
+          ...(network.in || { host: "", port: 1883 }),
           [field]: value,
         } as NetIn;
         break;
       case "in6":
         updatedNetwork.in6 = {
-          ...(updatedNetwork.in6 || { host: "", port: 1883 }),
+          ...(network.in6 || { host: "", port: 1883 }),
           [field]: value,
         } as NetIn6;
         break;
       case "rc":
         updatedNetwork.rc = {
-          ...(updatedNetwork.rc || { host: "", channel: 1 }),
+          ...(network.rc || { host: "", channel: 1 }),
           [field]: value,
         } as NetRc;
         break;
       case "l2":
         updatedNetwork.l2 = {
-          ...(updatedNetwork.l2 || { host: "", psm: 1 }),
+          ...(network.l2 || { host: "", psm: 1 }),
           [field]: value,
         } as NetL2;
         break;
       case "un":
         updatedNetwork.un = {
-          ...(updatedNetwork.un || { path: "" }),
+          ...(network.un || { path: "" }),
           [field]: value,
         } as NetUn;
         break;
@@ -66,6 +60,7 @@ export function NetworkAddressForm({ network, onChange }: NetworkAddressFormProp
                 id="ipv4-host"
                 value={network.in?.host || ""}
                 onChange={(e) => updateProtocolField("in", "host", e.target.value)}
+                onBlur={onSave}
                 placeholder="e.g., 192.168.1.100"
               />
             </div>
@@ -78,6 +73,7 @@ export function NetworkAddressForm({ network, onChange }: NetworkAddressFormProp
                 max="65535"
                 value={network.in?.port || 1883}
                 onChange={(e) => updateProtocolField("in", "port", parseInt(e.target.value) || 1883)}
+                onBlur={onSave}
                 placeholder="1883"
               />
             </div>
@@ -93,6 +89,7 @@ export function NetworkAddressForm({ network, onChange }: NetworkAddressFormProp
                 id="ipv6-host"
                 value={network.in6?.host || ""}
                 onChange={(e) => updateProtocolField("in6", "host", e.target.value)}
+                onBlur={onSave}
                 placeholder="e.g., ::1 or fe80::1"
               />
             </div>
@@ -105,6 +102,7 @@ export function NetworkAddressForm({ network, onChange }: NetworkAddressFormProp
                 max="65535"
                 value={network.in6?.port || 1883}
                 onChange={(e) => updateProtocolField("in6", "port", parseInt(e.target.value) || 1883)}
+                onBlur={onSave}
                 placeholder="1883"
               />
             </div>
@@ -120,6 +118,7 @@ export function NetworkAddressForm({ network, onChange }: NetworkAddressFormProp
                 id="rc-host"
                 value={network.rc?.host || ""}
                 onChange={(e) => updateProtocolField("rc", "host", e.target.value)}
+                onBlur={onSave}
                 placeholder="00:1A:7D:DA:71:13"
               />
               <p className="text-xs text-muted-foreground">Format: XX:XX:XX:XX:XX:XX</p>
@@ -133,6 +132,7 @@ export function NetworkAddressForm({ network, onChange }: NetworkAddressFormProp
                 max="30"
                 value={network.rc?.channel || 1}
                 onChange={(e) => updateProtocolField("rc", "channel", parseInt(e.target.value) || 1)}
+                onBlur={onSave}
                 placeholder="1"
               />
             </div>
@@ -148,6 +148,7 @@ export function NetworkAddressForm({ network, onChange }: NetworkAddressFormProp
                 id="l2-host"
                 value={network.l2?.host || ""}
                 onChange={(e) => updateProtocolField("l2", "host", e.target.value)}
+                onBlur={onSave}
                 placeholder="AA:BB:CC:DD:EE:FF"
               />
               <p className="text-xs text-muted-foreground">Format: XX:XX:XX:XX:XX:XX</p>
@@ -161,6 +162,7 @@ export function NetworkAddressForm({ network, onChange }: NetworkAddressFormProp
                 max="65535"
                 value={network.l2?.psm || 1}
                 onChange={(e) => updateProtocolField("l2", "psm", parseInt(e.target.value) || 1)}
+                onBlur={onSave}
                 placeholder="1"
               />
             </div>
@@ -175,6 +177,7 @@ export function NetworkAddressForm({ network, onChange }: NetworkAddressFormProp
               id="un-path"
               value={network.un?.path || ""}
               onChange={(e) => updateProtocolField("un", "path", e.target.value)}
+              onBlur={onSave}
               placeholder="/var/run/mqttbridge.sock"
               maxLength={107}
             />

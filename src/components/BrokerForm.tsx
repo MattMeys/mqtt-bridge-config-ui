@@ -17,10 +17,11 @@ interface BrokerFormProps {
   index: number;
   canDelete: boolean;
   onChange: (broker: Broker) => void;
+  onSave: () => void;
   onDelete: () => void;
 }
 
-export function BrokerForm({ broker, index, canDelete, onChange, onDelete }: BrokerFormProps) {
+export function BrokerForm({ broker, index, canDelete, onChange, onSave, onDelete }: BrokerFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   
   const updateField = <K extends keyof Broker>(field: K, value: Broker[K]) => {
@@ -75,6 +76,7 @@ export function BrokerForm({ broker, index, canDelete, onChange, onDelete }: Bro
               id={`instance-name-${index}`}
               value={broker.network.instance_name}
               onChange={(e) => updateNetworkField("instance_name", e.target.value)}
+              onBlur={onSave}
               placeholder="Instance name (required)"
               required
               className="h-9"
@@ -84,7 +86,10 @@ export function BrokerForm({ broker, index, canDelete, onChange, onDelete }: Bro
             <Checkbox
               id={`broker-enabled-${index}`}
               checked={!broker.disabled}
-              onCheckedChange={(checked) => updateField("disabled", !checked)}
+              onCheckedChange={(checked) => {
+                updateField("disabled", !checked);
+                setTimeout(onSave, 0);
+              }}
               title={broker.disabled ? "Enable broker" : "Disable broker"}
             />
           </div>
@@ -103,6 +108,7 @@ export function BrokerForm({ broker, index, canDelete, onChange, onDelete }: Bro
             id={`session-store-${index}`}
             value={broker.session_store}
             onChange={(e) => updateField("session_store", e.target.value)}
+            onBlur={onSave}
             placeholder="Optional path to session store"
           />
         </div>
@@ -112,7 +118,10 @@ export function BrokerForm({ broker, index, canDelete, onChange, onDelete }: Bro
             <Label htmlFor={`protocol-${index}`}>Protocol</Label>
             <Select
               value={broker.network.protocol}
-              onValueChange={(value) => updateNetworkField("protocol", value as any)}
+              onValueChange={(value) => {
+                updateNetworkField("protocol", value as any);
+                setTimeout(onSave, 0);
+              }}
             >
               <SelectTrigger id={`protocol-${index}`}>
                 <SelectValue />
@@ -131,7 +140,10 @@ export function BrokerForm({ broker, index, canDelete, onChange, onDelete }: Bro
             <Label htmlFor={`encryption-${index}`}>Encryption</Label>
             <Select
               value={broker.network.encryption}
-              onValueChange={(value) => updateNetworkField("encryption", value as any)}
+              onValueChange={(value) => {
+                updateNetworkField("encryption", value as any);
+                setTimeout(onSave, 0);
+              }}
             >
               <SelectTrigger id={`encryption-${index}`}>
                 <SelectValue />
@@ -147,7 +159,10 @@ export function BrokerForm({ broker, index, canDelete, onChange, onDelete }: Bro
             <Label htmlFor={`transport-${index}`}>Transport</Label>
             <Select
               value={broker.network.transport}
-              onValueChange={(value) => updateNetworkField("transport", value as any)}
+              onValueChange={(value) => {
+                updateNetworkField("transport", value as any);
+                setTimeout(onSave, 0);
+              }}
             >
               <SelectTrigger id={`transport-${index}`}>
                 <SelectValue />
@@ -163,16 +178,19 @@ export function BrokerForm({ broker, index, canDelete, onChange, onDelete }: Bro
         <NetworkAddressForm
           network={broker.network}
           onChange={(network) => updateField("network", network)}
+          onSave={onSave}
         />
 
         <ConnectionForm
           connection={broker.mqtt || defaultMqtt}
           onChange={(mqtt) => updateField("mqtt", mqtt)}
+          onSave={onSave}
         />
 
         <TopicsForm
           topics={broker.topics}
           onChange={(topics) => updateField("topics", topics)}
+          onSave={onSave}
         />
           </CardContent>
         </CollapsibleContent>

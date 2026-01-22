@@ -10,9 +10,10 @@ import { useState } from "react";
 interface ConnectionFormProps {
   connection: Mqtt;
   onChange: (connection: Mqtt) => void;
+  onSave: () => void;
 }
 
-export function ConnectionForm({ connection, onChange }: ConnectionFormProps) {
+export function ConnectionForm({ connection, onChange, onSave }: ConnectionFormProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const updateField = <K extends keyof Mqtt>(field: K, value: Mqtt[K]) => {
@@ -34,6 +35,7 @@ export function ConnectionForm({ connection, onChange }: ConnectionFormProps) {
               id="client_id"
               value={connection.client_id}
               onChange={(e) => updateField("client_id", e.target.value)}
+              onBlur={onSave}
               placeholder="Auto-generated if empty"
             />
           </div>
@@ -45,6 +47,7 @@ export function ConnectionForm({ connection, onChange }: ConnectionFormProps) {
               type="number"
               value={connection.keep_alive}
               onChange={(e) => updateField("keep_alive", parseInt(e.target.value) || 60)}
+              onBlur={onSave}
             />
           </div>
         </div>
@@ -54,7 +57,10 @@ export function ConnectionForm({ connection, onChange }: ConnectionFormProps) {
           <Switch
             id="clean_session"
             checked={connection.clean_session}
-            onCheckedChange={(checked) => updateField("clean_session", checked)}
+            onCheckedChange={(checked) => {
+              updateField("clean_session", checked);
+              setTimeout(onSave, 0);
+            }}
           />
         </div>
 
@@ -63,7 +69,10 @@ export function ConnectionForm({ connection, onChange }: ConnectionFormProps) {
           <Switch
             id="loop_prevention"
             checked={connection.loop_prevention}
-            onCheckedChange={(checked) => updateField("loop_prevention", checked)}
+            onCheckedChange={(checked) => {
+              updateField("loop_prevention", checked);
+              setTimeout(onSave, 0);
+            }}
           />
         </div>
 
@@ -77,6 +86,7 @@ export function ConnectionForm({ connection, onChange }: ConnectionFormProps) {
                 id="will_topic"
                 value={connection.will_topic}
                 onChange={(e) => updateField("will_topic", e.target.value)}
+                onBlur={onSave}
                 placeholder="Optional"
               />
             </div>
@@ -85,7 +95,10 @@ export function ConnectionForm({ connection, onChange }: ConnectionFormProps) {
               <Label htmlFor="will_qos">Will QoS</Label>
               <Select
                 value={connection.will_qos.toString()}
-                onValueChange={(value) => updateField("will_qos", parseInt(value) as 0 | 1 | 2)}
+                onValueChange={(value) => {
+                  updateField("will_qos", parseInt(value) as 0 | 1 | 2);
+                  setTimeout(onSave, 0);
+                }}
               >
                 <SelectTrigger id="will_qos">
                   <SelectValue />
@@ -105,6 +118,7 @@ export function ConnectionForm({ connection, onChange }: ConnectionFormProps) {
               id="will_message"
               value={connection.will_message}
               onChange={(e) => updateField("will_message", e.target.value)}
+              onBlur={onSave}
               placeholder="Optional"
             />
           </div>
@@ -114,7 +128,10 @@ export function ConnectionForm({ connection, onChange }: ConnectionFormProps) {
             <Switch
               id="will_retain"
               checked={connection.will_retain}
-              onCheckedChange={(checked) => updateField("will_retain", checked)}
+              onCheckedChange={(checked) => {
+                updateField("will_retain", checked);
+                setTimeout(onSave, 0);
+              }}
             />
           </div>
         </div>
@@ -128,6 +145,7 @@ export function ConnectionForm({ connection, onChange }: ConnectionFormProps) {
               id="username"
               value={connection.username}
               onChange={(e) => updateField("username", e.target.value)}
+              onBlur={onSave}
               placeholder="Optional"
             />
           </div>
@@ -139,6 +157,7 @@ export function ConnectionForm({ connection, onChange }: ConnectionFormProps) {
               type="password"
               value={connection.password}
               onChange={(e) => updateField("password", e.target.value)}
+              onBlur={onSave}
               placeholder="Optional"
             />
           </div>

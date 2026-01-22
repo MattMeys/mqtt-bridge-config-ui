@@ -8,15 +8,18 @@ import { Plus, Trash2 } from "lucide-react";
 interface TopicsFormProps {
   topics: Topic[];
   onChange: (topics: Topic[]) => void;
+  onSave: () => void;
 }
 
-export function TopicsForm({ topics, onChange }: TopicsFormProps) {
+export function TopicsForm({ topics, onChange, onSave }: TopicsFormProps) {
   const addTopic = () => {
     onChange([...topics, { topic: "#", qos: 0 }]);
+    setTimeout(onSave, 0);
   };
 
   const removeTopic = (index: number) => {
     onChange(topics.filter((_, i) => i !== index));
+    setTimeout(onSave, 0);
   };
 
   const updateTopic = (index: number, field: keyof Topic, value: any) => {
@@ -44,6 +47,7 @@ export function TopicsForm({ topics, onChange }: TopicsFormProps) {
                 id={`topic-${index}`}
                 value={topic.topic}
                 onChange={(e) => updateTopic(index, "topic", e.target.value)}
+                onBlur={onSave}
                 placeholder="e.g., #, sensor/+/temperature"
               />
             </div>
@@ -52,7 +56,10 @@ export function TopicsForm({ topics, onChange }: TopicsFormProps) {
               <Label htmlFor={`qos-${index}`}>QoS</Label>
               <Select
                 value={topic.qos.toString()}
-                onValueChange={(value) => updateTopic(index, "qos", parseInt(value))}
+                onValueChange={(value) => {
+                  updateTopic(index, "qos", parseInt(value));
+                  setTimeout(onSave, 0);
+                }}
               >
                 <SelectTrigger id={`qos-${index}`}>
                   <SelectValue />

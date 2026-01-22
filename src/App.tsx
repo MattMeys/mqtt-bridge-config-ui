@@ -1,344 +1,243 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { BridgesConfig, defaultBridge } from "./types/mqtt-bridge";
 import { BridgeForm } from "./components/BridgeForm";
 import { Button } from "./components/ui/button";
-import { Plus, Download, Upload, FileJson } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "./components/ui/alert";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner@2.0.3";
 import { Toaster } from "./components/ui/sonner";
 import logo from "figma:asset/0edd3e9239d6ff6f8f9c5985d785e309773e3d03.png";
+
+// Simple JSON patch comparison function
+function generateJSONPatch(oldObj: any, newObj: any, path = ""): any[] {
+  const patches: any[] = [];
+  
+  // Handle array changes
+  if (Array.isArray(oldObj) && Array.isArray(newObj)) {
+    // Simple approach: if arrays differ in length or content, replace the whole array
+    if (JSON.stringify(oldObj) !== JSON.stringify(newObj)) {
+      patches.push({ op: "replace", path: path || "/", value: newObj });
+    }
+    return patches;
+  }
+  
+  // Handle object changes
+  if (typeof oldObj === "object" && typeof newObj === "object" && oldObj !== null && newObj !== null) {
+    const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
+    
+    for (const key of allKeys) {
+      const newPath = path ? `${path}/${key}` : `/${key}`;
+      const oldValue = oldObj[key];
+      const newValue = newObj[key];
+      
+      if (!(key in newObj)) {
+        // Key was removed
+        patches.push({ op: "remove", path: newPath });
+      } else if (!(key in oldObj)) {
+        // Key was added
+        patches.push({ op: "add", path: newPath, value: newValue });
+      } else if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+        // Value changed
+        if (typeof oldValue === "object" && typeof newValue === "object") {
+          // Recursively compare objects
+          const nestedPatches = generateJSONPatch(oldValue, newValue, newPath);
+          patches.push(...nestedPatches);
+        } else {
+          patches.push({ op: "replace", path: newPath, value: newValue });
+        }
+      }
+    }
+  } else if (oldObj !== newObj) {
+    // Primitive value changed
+    patches.push({ op: "replace", path: path || "/", value: newObj });
+  }
+  
+  return patches;
+}
 
 export default function App() {
   const [config, setConfig] = useState<BridgesConfig>({
     bridges: [{ ...defaultBridge }],
   });
-
+  const [isLoading, setIsLoading] = useState(true);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [hasAttemptedValidation, setHasAttemptedValidation] = useState(false);
+  
+  // Keep track of the last saved config for generating patches
+  const lastSavedConfigRef = useRef<BridgesConfig | null>(null);
+
+  // Load configuration on mount
+  useEffect(() => {
+    loadConfig();
+  }, []);
+
+  const loadConfig = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/bridge/config');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load configuration: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      setConfig(data);
+      lastSavedConfigRef.current = JSON.parse(JSON.stringify(data)); // Deep clone
+      toast.success("Configuration loaded successfully");
+    } catch (error) {
+      toast.error("Failed to load configuration", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+      // Keep the default config if loading fails
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const cleanConfig = (cfg: BridgesConfig) => {
+    // Clean up the config to match the JSON schema
+    return {
+      bridges: cfg.bridges.map(bridge => {
+        const cleanBridge: any = {
+          name: bridge.name,
+          brokers: bridge.brokers.map(broker => {
+            const cleanBroker: any = {
+              network: {
+                instance_name: broker.network.instance_name,
+                protocol: broker.network.protocol,
+                encryption: broker.network.encryption,
+                transport: broker.network.transport,
+              },
+              topics: broker.topics,
+            };
+
+            // Add disabled if true
+            if (broker.disabled) {
+              cleanBroker.disabled = broker.disabled;
+            }
+
+            // Add session_store only if it's not empty
+            if (broker.session_store) {
+              cleanBroker.session_store = broker.session_store;
+            }
+
+            // Add prefix if it's not empty
+            if (broker.prefix) {
+              cleanBroker.prefix = broker.prefix;
+            }
+
+            // Add mqtt only if it exists
+            if (broker.mqtt) {
+              cleanBroker.mqtt = broker.mqtt;
+            }
+
+            // Add the protocol-specific address fields
+            switch (broker.network.protocol) {
+              case "in":
+                if (broker.network.in) cleanBroker.network.in = broker.network.in;
+                break;
+              case "in6":
+                if (broker.network.in6) cleanBroker.network.in6 = broker.network.in6;
+                break;
+              case "rc":
+                if (broker.network.rc) cleanBroker.network.rc = broker.network.rc;
+                break;
+              case "l2":
+                if (broker.network.l2) cleanBroker.network.l2 = broker.network.l2;
+                break;
+              case "un":
+                if (broker.network.un) cleanBroker.network.un = broker.network.un;
+                break;
+            }
+
+            return cleanBroker;
+          }),
+        };
+
+        // Add disabled if true
+        if (bridge.disabled) {
+          cleanBridge.disabled = bridge.disabled;
+        }
+
+        // Add prefix if it's not empty
+        if (bridge.prefix) {
+          cleanBridge.prefix = bridge.prefix;
+        }
+
+        return cleanBridge;
+      }),
+    };
+  };
+
+  const sendPatchToServer = async (newConfig: BridgesConfig) => {
+    if (!lastSavedConfigRef.current) {
+      // If we don't have a reference config yet, skip sending patch
+      return;
+    }
+
+    const cleanedOld = cleanConfig(lastSavedConfigRef.current);
+    const cleanedNew = cleanConfig(newConfig);
+
+    // Generate JSON patch
+    const patch = generateJSONPatch(cleanedOld, cleanedNew);
+
+    if (patch.length === 0) {
+      // No changes detected
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/bridge/config', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json-patch+json',
+        },
+        body: JSON.stringify(patch),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to save configuration: ${response.statusText}`);
+      }
+
+      // Update the last saved config
+      lastSavedConfigRef.current = JSON.parse(JSON.stringify(newConfig));
+      
+      toast.success("Configuration saved", {
+        description: `${patch.length} change${patch.length !== 1 ? 's' : ''} applied`,
+      });
+    } catch (error) {
+      toast.error("Failed to save configuration", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  };
 
   const addBridge = () => {
-    setConfig({
+    const newConfig = {
       bridges: [...config.bridges, { ...defaultBridge }],
-    });
+    };
+    setConfig(newConfig);
+    sendPatchToServer(newConfig);
   };
 
   const removeBridge = (index: number) => {
-    setConfig({
+    const newConfig = {
       bridges: config.bridges.filter((_, i) => i !== index),
-    });
+    };
+    setConfig(newConfig);
+    sendPatchToServer(newConfig);
   };
 
   const updateBridge = (index: number, bridge: any) => {
     const newBridges = [...config.bridges];
     newBridges[index] = bridge;
-    setConfig({ bridges: newBridges });
+    const newConfig = { bridges: newBridges };
+    setConfig(newConfig);
+    // Don't send patch immediately - wait for onBlurSave callback
   };
 
-  const validateConfig = (): boolean => {
-    const errors: string[] = [];
-
-    if (config.bridges.length === 0) {
-      errors.push("At least one bridge is required");
-    }
-
-    config.bridges.forEach((bridge, bridgeIndex) => {
-      if (!bridge.name || bridge.name.trim() === "") {
-        errors.push(`Bridge ${bridgeIndex + 1}: Name is required`);
-      }
-
-      if (bridge.brokers.length < 2) {
-        errors.push(`Bridge ${bridgeIndex + 1}: At least 2 brokers are required`);
-      }
-
-      bridge.brokers.forEach((broker, brokerIndex) => {
-        const brokerLabel = `Bridge ${bridgeIndex + 1}, Broker ${brokerIndex + 1}`;
-        
-        if (!broker.network.instance_name || broker.network.instance_name.trim() === "") {
-          errors.push(`${brokerLabel}: Instance name is required`);
-        }
-
-        // Validate protocol-specific address fields
-        switch (broker.network.protocol) {
-          case "in":
-            if (!broker.network.in?.host) {
-              errors.push(`${brokerLabel}: IPv4 host is required`);
-            }
-            if (!broker.network.in?.port || broker.network.in.port < 1 || broker.network.in.port > 65535) {
-              errors.push(`${brokerLabel}: Valid IPv4 port (1-65535) is required`);
-            }
-            break;
-          case "in6":
-            if (!broker.network.in6?.host) {
-              errors.push(`${brokerLabel}: IPv6 host is required`);
-            }
-            if (!broker.network.in6?.port || broker.network.in6.port < 1 || broker.network.in6.port > 65535) {
-              errors.push(`${brokerLabel}: Valid IPv6 port (1-65535) is required`);
-            }
-            break;
-          case "rc":
-            if (!broker.network.rc?.host) {
-              errors.push(`${brokerLabel}: Bluetooth address is required`);
-            }
-            if (!broker.network.rc?.channel || broker.network.rc.channel < 1 || broker.network.rc.channel > 30) {
-              errors.push(`${brokerLabel}: Valid RFCOMM channel (1-30) is required`);
-            }
-            break;
-          case "l2":
-            if (!broker.network.l2?.host) {
-              errors.push(`${brokerLabel}: Bluetooth address is required`);
-            }
-            if (!broker.network.l2?.psm || broker.network.l2.psm < 1 || broker.network.l2.psm > 65535) {
-              errors.push(`${brokerLabel}: Valid L2CAP PSM (1-65535) is required`);
-            }
-            break;
-          case "un":
-            if (!broker.network.un?.path) {
-              errors.push(`${brokerLabel}: Unix socket path is required`);
-            }
-            break;
-        }
-      });
-    });
-
-    setValidationErrors(errors);
-    setHasAttemptedValidation(true);
-    return errors.length === 0;
-  };
-
-  const exportConfig = () => {
-    if (!validateConfig()) {
-      toast.error("Configuration has validation errors", {
-        description: "Please fix the errors before exporting",
-      });
-      return;
-    }
-
-    // Clean up the config to match the JSON schema
-    const cleanConfig = {
-      bridges: config.bridges.map(bridge => {
-        const cleanBridge: any = {
-          name: bridge.name,
-          brokers: bridge.brokers.map(broker => {
-            const cleanBroker: any = {
-              network: {
-                instance_name: broker.network.instance_name,
-                protocol: broker.network.protocol,
-                encryption: broker.network.encryption,
-                transport: broker.network.transport,
-              },
-              topics: broker.topics,
-            };
-
-            // Add disabled if true
-            if (broker.disabled) {
-              cleanBroker.disabled = broker.disabled;
-            }
-
-            // Add session_store only if it's not empty
-            if (broker.session_store) {
-              cleanBroker.session_store = broker.session_store;
-            }
-
-            // Add prefix if it's not empty
-            if (broker.prefix) {
-              cleanBroker.prefix = broker.prefix;
-            }
-
-            // Add mqtt only if it exists
-            if (broker.mqtt) {
-              cleanBroker.mqtt = broker.mqtt;
-            }
-
-            // Add the protocol-specific address fields
-            switch (broker.network.protocol) {
-              case "in":
-                if (broker.network.in) cleanBroker.network.in = broker.network.in;
-                break;
-              case "in6":
-                if (broker.network.in6) cleanBroker.network.in6 = broker.network.in6;
-                break;
-              case "rc":
-                if (broker.network.rc) cleanBroker.network.rc = broker.network.rc;
-                break;
-              case "l2":
-                if (broker.network.l2) cleanBroker.network.l2 = broker.network.l2;
-                break;
-              case "un":
-                if (broker.network.un) cleanBroker.network.un = broker.network.un;
-                break;
-            }
-
-            return cleanBroker;
-          }),
-        };
-
-        // Add disabled if true
-        if (bridge.disabled) {
-          cleanBridge.disabled = bridge.disabled;
-        }
-
-        // Add prefix if it's not empty
-        if (bridge.prefix) {
-          cleanBridge.prefix = bridge.prefix;
-        }
-
-        return cleanBridge;
-      }),
-    };
-
-    const jsonString = JSON.stringify(cleanConfig, null, 2);
-    const blob = new Blob([jsonString], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "mqtt-bridges-config.json";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    toast.success("Configuration exported successfully", {
-      description: "mqtt-bridges-config.json has been downloaded",
-    });
-  };
-
-  const importConfig = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "application/json";
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const imported = JSON.parse(e.target?.result as string);
-            setConfig(imported);
-            setValidationErrors([]);
-            setHasAttemptedValidation(false);
-            toast.success("Configuration imported successfully");
-          } catch (error) {
-            toast.error("Failed to import configuration", {
-              description: "Invalid JSON file",
-            });
-          }
-        };
-        reader.readAsText(file);
-      }
-    };
-    input.click();
-  };
-
-  const viewJSON = () => {
-    if (!validateConfig()) {
-      toast.error("Configuration has validation errors");
-      return;
-    }
-
-    // Clean up the config to match the JSON schema
-    const cleanConfig = {
-      bridges: config.bridges.map(bridge => {
-        const cleanBridge: any = {
-          name: bridge.name,
-          brokers: bridge.brokers.map(broker => {
-            const cleanBroker: any = {
-              network: {
-                instance_name: broker.network.instance_name,
-                protocol: broker.network.protocol,
-                encryption: broker.network.encryption,
-                transport: broker.network.transport,
-              },
-              topics: broker.topics,
-            };
-
-            // Add disabled if true
-            if (broker.disabled) {
-              cleanBroker.disabled = broker.disabled;
-            }
-
-            // Add session_store only if it's not empty
-            if (broker.session_store) {
-              cleanBroker.session_store = broker.session_store;
-            }
-
-            // Add prefix if it's not empty
-            if (broker.prefix) {
-              cleanBroker.prefix = broker.prefix;
-            }
-
-            // Add mqtt only if it exists
-            if (broker.mqtt) {
-              cleanBroker.mqtt = broker.mqtt;
-            }
-
-            // Add the protocol-specific address fields
-            switch (broker.network.protocol) {
-              case "in":
-                if (broker.network.in) cleanBroker.network.in = broker.network.in;
-                break;
-              case "in6":
-                if (broker.network.in6) cleanBroker.network.in6 = broker.network.in6;
-                break;
-              case "rc":
-                if (broker.network.rc) cleanBroker.network.rc = broker.network.rc;
-                break;
-              case "l2":
-                if (broker.network.l2) cleanBroker.network.l2 = broker.network.l2;
-                break;
-              case "un":
-                if (broker.network.un) cleanBroker.network.un = broker.network.un;
-                break;
-            }
-
-            return cleanBroker;
-          }),
-        };
-
-        // Add disabled if true
-        if (bridge.disabled) {
-          cleanBridge.disabled = bridge.disabled;
-        }
-
-        // Add prefix if it's not empty
-        if (bridge.prefix) {
-          cleanBridge.prefix = bridge.prefix;
-        }
-
-        return cleanBridge;
-      }),
-    };
-
-    const jsonString = JSON.stringify(cleanConfig, null, 2);
-    const newWindow = window.open("", "_blank");
-    if (newWindow) {
-      newWindow.document.write(`
-        <html>
-          <head>
-            <title>MQTT Bridge Configuration</title>
-            <style>
-              body {
-                font-family: monospace;
-                padding: 20px;
-                background: #1e1e1e;
-                color: #d4d4d4;
-              }
-              pre {
-                background: #1e1e1e;
-                padding: 20px;
-                border-radius: 8px;
-                overflow: auto;
-              }
-            </style>
-          </head>
-          <body>
-            <h1>MQTT Bridge Configuration</h1>
-            <pre>${jsonString}</pre>
-          </body>
-        </html>
-      `);
-      newWindow.document.close();
-    }
+  const handleSaveToServer = () => {
+    sendPatchToServer(config);
   };
 
   return (
@@ -358,50 +257,15 @@ export default function App() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-3">
-              <Button onClick={importConfig} variant="outline">
-                <Upload className="h-4 w-4 mr-2" />
-                Import
-              </Button>
-              <Button onClick={viewJSON} variant="outline">
-                <FileJson className="h-4 w-4 mr-2" />
-                View JSON
-              </Button>
-              <Button onClick={exportConfig}>
-                <Download className="h-4 w-4 mr-2" />
-                Export Config
-              </Button>
-            </div>
+            {isLoading && (
+              <div className="text-sm text-muted-foreground">Loading...</div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {hasAttemptedValidation && validationErrors.length > 0 && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Validation Errors</AlertTitle>
-            <AlertDescription>
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                {validationErrors.map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {hasAttemptedValidation && validationErrors.length === 0 && config.bridges.length > 0 && (
-          <Alert className="mb-6 border-green-500/50 bg-green-500/10">
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-            <AlertTitle className="text-green-500">Configuration Valid</AlertTitle>
-            <AlertDescription className="text-green-500/80">
-              All required fields are filled and constraints are met
-            </AlertDescription>
-          </Alert>
-        )}
-
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
@@ -432,6 +296,7 @@ export default function App() {
                   bridge={bridge}
                   index={index}
                   onChange={(updatedBridge) => updateBridge(index, updatedBridge)}
+                  onSave={handleSaveToServer}
                   onDelete={() => removeBridge(index)}
                 />
               ))}
@@ -448,6 +313,7 @@ export default function App() {
             <p>• QoS levels: 0 (at most once), 1 (at least once), 2 (exactly once)</p>
             <p>• Enable loop prevention to avoid message cycles between brokers</p>
             <p>• Use TLS encryption for secure connections over public networks</p>
+            <p>• Changes are automatically saved when you finish editing a field</p>
           </div>
         </div>
       </div>

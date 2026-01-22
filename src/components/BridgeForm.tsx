@@ -15,10 +15,11 @@ interface BridgeFormProps {
   bridge: Bridge;
   index: number;
   onChange: (bridge: Bridge) => void;
+  onSave: () => void;
   onDelete: () => void;
 }
 
-export function BridgeForm({ bridge, index, onChange, onDelete }: BridgeFormProps) {
+export function BridgeForm({ bridge, index, onChange, onSave, onDelete }: BridgeFormProps) {
   const [isOpen, setIsOpen] = useState(true);
   const updateField = <K extends keyof Bridge>(field: K, value: Bridge[K]) => {
     onChange({ ...bridge, [field]: value });
@@ -26,10 +27,14 @@ export function BridgeForm({ bridge, index, onChange, onDelete }: BridgeFormProp
 
   const addBroker = () => {
     updateField("brokers", [...bridge.brokers, { ...defaultBroker }]);
+    // Send changes immediately when adding a broker (button click)
+    setTimeout(onSave, 0);
   };
 
   const removeBroker = (brokerIndex: number) => {
     updateField("brokers", bridge.brokers.filter((_, i) => i !== brokerIndex));
+    // Send changes immediately when removing a broker (button click)
+    setTimeout(onSave, 0);
   };
 
   const updateBroker = (brokerIndex: number, broker: any) => {
@@ -51,6 +56,7 @@ export function BridgeForm({ bridge, index, onChange, onDelete }: BridgeFormProp
               id={`bridge-name-${index}`}
               value={bridge.name}
               onChange={(e) => updateField("name", e.target.value)}
+              onBlur={onSave}
               placeholder="Bridge name (required)"
               required
               className="h-9 bg-white"
@@ -60,7 +66,10 @@ export function BridgeForm({ bridge, index, onChange, onDelete }: BridgeFormProp
             <Checkbox
               id={`bridge-enabled-${index}`}
               checked={!bridge.disabled}
-              onCheckedChange={(checked) => updateField("disabled", !checked)}
+              onCheckedChange={(checked) => {
+                updateField("disabled", !checked);
+                setTimeout(onSave, 0);
+              }}
               title={bridge.disabled ? "Enable bridge" : "Disable bridge"}
             />
           </div>
@@ -102,6 +111,7 @@ export function BridgeForm({ bridge, index, onChange, onDelete }: BridgeFormProp
                 index={brokerIndex}
                 canDelete={bridge.brokers.length > 2}
                 onChange={(updatedBroker) => updateBroker(brokerIndex, updatedBroker)}
+                onSave={onSave}
                 onDelete={() => removeBroker(brokerIndex)}
               />
             ))}
