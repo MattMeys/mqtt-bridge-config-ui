@@ -117,6 +117,7 @@ export default function App() {
 
   const cleanConfig = (cfg: BridgesConfig) => {
     // Clean up the config to match the JSON schema
+    // Keep all required fields even if empty to avoid server errors
     return {
       bridges: cfg.bridges.map(bridge => {
         const cleanBridge: any = {
@@ -129,6 +130,7 @@ export default function App() {
                 encryption: broker.network.encryption,
                 transport: broker.network.transport,
               },
+              mqtt: broker.mqtt || {}, // Always include mqtt object, even if empty
               topics: broker.topics,
             };
 
@@ -145,11 +147,6 @@ export default function App() {
             // Add prefix if it's not empty
             if (broker.prefix) {
               cleanBroker.prefix = broker.prefix;
-            }
-
-            // Add mqtt only if it exists
-            if (broker.mqtt) {
-              cleanBroker.mqtt = broker.mqtt;
             }
 
             // Add the protocol-specific address fields
