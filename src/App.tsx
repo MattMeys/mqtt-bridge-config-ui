@@ -86,6 +86,9 @@ export default function App() {
   
   // Keep track of the last saved config for generating patches
   const lastSavedConfigRef = useRef<BridgesConfig | null>(null);
+  // Keep a synchronous reference to the latest in-memory config so
+  // immediate saves (e.g. checkbox toggles) can use it before state commits
+  const latestConfigRef = useRef<BridgesConfig>(config);
 
   // Load configuration on mount
   useEffect(() => {
@@ -102,8 +105,13 @@ export default function App() {
       }
       
       const data = await response.json();
+      if (data === null || typeof data !== 'object' || !Array.isArray(data.bridges)) {
+        throw new Error("Invalid configuration format received from server");
+      }
       setConfig(data);
       lastSavedConfigRef.current = JSON.parse(JSON.stringify(data)); // Deep clone
+      // Keep latest reference in sync immediately
+      latestConfigRef.current = data;
       toast.success("Configuration loaded successfully");
     } catch (error) {
       toast.error("Failed to load configuration", {
@@ -235,6 +243,8 @@ export default function App() {
       bridges: [...config.bridges, { ...defaultBridge }],
     };
     setConfig(newConfig);
+    // Update latest ref synchronously so immediate saves use correct data
+    latestConfigRef.current = newConfig;
     sendPatchToServer(newConfig);
   };
 
@@ -243,6 +253,8 @@ export default function App() {
       bridges: config.bridges.filter((_, i) => i !== index),
     };
     setConfig(newConfig);
+    // Update latest ref synchronously
+    latestConfigRef.current = newConfig;
     sendPatchToServer(newConfig);
   };
 
@@ -251,11 +263,16 @@ export default function App() {
     newBridges[index] = bridge;
     const newConfig = { bridges: newBridges };
     setConfig(newConfig);
+    // Keep latest ref in sync immediately so children can call onSave()
+    // and the save will operate on the most recent config.
+    latestConfigRef.current = newConfig;
     // Don't send patch immediately - wait for onBlurSave callback
   };
 
   const handleSaveToServer = () => {
-    sendPatchToServer(config);
+    // Use the synchronous latest config ref so saves triggered immediately
+    // after setState see the updated data.
+    sendPatchToServer(latestConfigRef.current);
   };
 
   return (
