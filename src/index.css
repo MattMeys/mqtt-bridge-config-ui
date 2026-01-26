@@ -49,6 +49,8 @@
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --color-green-500: oklch(.723 .219 149.579);
     --color-white: #fff;
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
     --spacing: .25rem;
     --container-7xl: 80rem;
     --text-xs: .75rem;

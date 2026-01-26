@@ -53,7 +53,7 @@ export function BridgeForm({ bridge, index, onChange, onSave, onDelete, onDuplic
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className={`border-2 ${bridge.disabled ? 'opacity-50' : ''}`}>
-        <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-3 pt-3 bg-primary rounded-t-lg">
+        <CardHeader className={`flex flex-row items-center gap-3 space-y-0 pb-3 pt-3 bg-primary ${isOpen ? 'rounded-t-lg' : 'rounded-lg'}`}>
           <CollapsibleTrigger className="flex items-center gap-2 hover:opacity-70 transition-opacity flex-shrink-0">
             <ChevronDown className={`h-4 w-4 transition-transform text-primary-foreground ${isOpen ? 'rotate-180' : ''}`} />
             <span className="text-sm font-semibold text-primary-foreground">Bridge {index + 1}</span>
@@ -67,7 +67,7 @@ export function BridgeForm({ bridge, index, onChange, onSave, onDelete, onDuplic
               onBlur={onSave}
               placeholder="Bridge name (required)"
               required
-              className="h-9 bg-primary-foreground text-primary-foreground"
+              className="h-9 bg-primary-foreground text-primary-foreground placeholder:text-primary-foreground/70"
             />
           </div>
           <div className="flex items-center gap-2 shrink-0 ">
