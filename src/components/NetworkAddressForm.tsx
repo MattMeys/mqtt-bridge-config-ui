@@ -57,6 +57,7 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
             <div className="space-y-2">
               <Label htmlFor="ipv4-host">Host</Label>
               <Input
+              onGreyBg
                 id="ipv4-host"
                 value={network.in?.host || ""}
                 onChange={(e) => updateProtocolField("in", "host", e.target.value)}
@@ -67,6 +68,7 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
             <div className="space-y-2">
               <Label htmlFor="ipv4-port">Port</Label>
               <Input
+              onGreyBg
                 id="ipv4-port"
                 type="number"
                 min="1"
@@ -86,6 +88,7 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
             <div className="space-y-2">
               <Label htmlFor="ipv6-host">Host</Label>
               <Input
+              onGreyBg
                 id="ipv6-host"
                 value={network.in6?.host || ""}
                 onChange={(e) => updateProtocolField("in6", "host", e.target.value)}
@@ -96,6 +99,7 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
             <div className="space-y-2">
               <Label htmlFor="ipv6-port">Port</Label>
               <Input
+              onGreyBg
                 id="ipv6-port"
                 type="number"
                 min="1"
@@ -115,6 +119,7 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
             <div className="space-y-2">
               <Label htmlFor="rc-host">Bluetooth Address</Label>
               <Input
+              onGreyBg
                 id="rc-host"
                 value={network.rc?.host || ""}
                 onChange={(e) => updateProtocolField("rc", "host", e.target.value)}
@@ -126,6 +131,7 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
             <div className="space-y-2">
               <Label htmlFor="rc-channel">Channel</Label>
               <Input
+              onGreyBg
                 id="rc-channel"
                 type="number"
                 min="1"
@@ -145,6 +151,7 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
             <div className="space-y-2">
               <Label htmlFor="l2-host">Bluetooth Address</Label>
               <Input
+              onGreyBg
                 id="l2-host"
                 value={network.l2?.host || ""}
                 onChange={(e) => updateProtocolField("l2", "host", e.target.value)}
@@ -156,6 +163,7 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
             <div className="space-y-2">
               <Label htmlFor="l2-psm">PSM</Label>
               <Input
+              onGreyBg
                 id="l2-psm"
                 type="number"
                 min="1"
@@ -174,6 +182,7 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
           <div className="space-y-2">
             <Label htmlFor="un-path">Socket Path</Label>
             <Input
+            onGreyBg
               id="un-path"
               value={network.un?.path || ""}
               onChange={(e) => updateProtocolField("un", "path", e.target.value)}
@@ -191,7 +200,7 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
   };
 
   return (
-    <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/30">
+    <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/50">
       <h4>Network Address</h4>
       {renderAddressFields()}
     </div>

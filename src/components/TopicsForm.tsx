@@ -48,6 +48,7 @@ export function TopicsForm({ topics, onChange, onSave }: TopicsFormProps) {
                 value={topic.topic}
                 onChange={(e) => updateTopic(index, "topic", e.target.value)}
                 onBlur={onSave}
+                onGreyBg
                 placeholder="e.g., #, sensor/+/temperature"
               />
             </div>
@@ -61,7 +62,7 @@ export function TopicsForm({ topics, onChange, onSave }: TopicsFormProps) {
                   setTimeout(onSave, 0);
                 }}
               >
-                <SelectTrigger id={`qos-${index}`}>
+                <SelectTrigger id={`qos-${index}`} onGreyBg>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

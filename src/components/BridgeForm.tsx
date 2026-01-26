@@ -53,23 +53,24 @@ export function BridgeForm({ bridge, index, onChange, onSave, onDelete, onDuplic
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className={`border-2 ${bridge.disabled ? 'opacity-50' : ''}`}>
-        <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-3 pt-3 bg-muted/50">
+        <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-3 pt-3 bg-primary rounded-t-lg">
           <CollapsibleTrigger className="flex items-center gap-2 hover:opacity-70 transition-opacity flex-shrink-0">
-            <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            <span className="text-sm text-muted-foreground">Bridge {index + 1}</span>
+            <ChevronDown className={`h-4 w-4 transition-transform text-primary-foreground ${isOpen ? 'rotate-180' : ''}`} />
+            <span className="text-sm font-semibold text-primary-foreground">Bridge {index + 1}</span>
           </CollapsibleTrigger>
           <div className="flex-1">
             <Input
               id={`bridge-name-${index}`}
+              onGreyBg
               value={bridge.name}
               onChange={(e) => updateField("name", e.target.value)}
               onBlur={onSave}
               placeholder="Bridge name (required)"
               required
-              className="h-9 bg-white"
+              className="h-9 bg-primary-foreground text-primary-foreground"
             />
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0 ">
             <Checkbox
               id={`bridge-enabled-${index}`}
               checked={!bridge.disabled}
@@ -78,12 +79,13 @@ export function BridgeForm({ bridge, index, onChange, onSave, onDelete, onDuplic
                 setTimeout(onSave, 0);
               }}
               title={bridge.disabled ? "Enable bridge" : "Disable bridge"}
+              className="border-white bg-primary-foreground"
             />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <div>
-                <Button size="icon" variant="ghost" className="flex-shrink-0">
+                <Button size="icon" variant="default" className="shrink-0 text-primary-foreground ">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </div>

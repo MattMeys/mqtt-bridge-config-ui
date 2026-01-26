@@ -21,18 +21,19 @@ export function ConnectionForm({ connection, onChange, onSave }: ConnectionFormP
   };
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-4">
-      <CollapsibleTrigger className="flex items-center gap-2 w-full p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors">
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className={` rounded-lg bg-secondary`}>
+      <CollapsibleTrigger className="flex items-center gap-2 w-full p-3 bg-muted/50 rounded-lg hover:bg-muted/80 transition-colors">
         <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         <span>Connection Settings</span>
       </CollapsibleTrigger>
       
-      <CollapsibleContent className="space-y-4 pt-2">
+      <CollapsibleContent className="space-y-4 p-3">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="client_id">Client ID</Label>
             <Input
               id="client_id"
+              onGreyBg
               value={connection.client_id}
               onChange={(e) => updateField("client_id", e.target.value)}
               onBlur={onSave}
@@ -45,6 +46,7 @@ export function ConnectionForm({ connection, onChange, onSave }: ConnectionFormP
             <Input
               id="keep_alive"
               type="number"
+              onGreyBg
               value={connection.keep_alive}
               onChange={(e) => updateField("keep_alive", parseInt(e.target.value) || 60)}
               onBlur={onSave}
@@ -52,7 +54,7 @@ export function ConnectionForm({ connection, onChange, onSave }: ConnectionFormP
           </div>
         </div>
 
-        <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+        <div className="flex items-center justify-between p-3 rounded-lg">
           <Label htmlFor="clean_session">Clean Session</Label>
           <Switch
             id="clean_session"
@@ -64,7 +66,7 @@ export function ConnectionForm({ connection, onChange, onSave }: ConnectionFormP
           />
         </div>
 
-        <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+        <div className="flex items-center justify-between p-3 rounded-lg">
           <Label htmlFor="loop_prevention">Loop Prevention</Label>
           <Switch
             id="loop_prevention"
@@ -84,6 +86,7 @@ export function ConnectionForm({ connection, onChange, onSave }: ConnectionFormP
               <Label htmlFor="will_topic">Will Topic</Label>
               <Input
                 id="will_topic"
+                onGreyBg
                 value={connection.will_topic}
                 onChange={(e) => updateField("will_topic", e.target.value)}
                 onBlur={onSave}
@@ -100,7 +103,7 @@ export function ConnectionForm({ connection, onChange, onSave }: ConnectionFormP
                   setTimeout(onSave, 0);
                 }}
               >
-                <SelectTrigger id="will_qos">
+                <SelectTrigger id="will_qos" onGreyBg>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -115,6 +118,7 @@ export function ConnectionForm({ connection, onChange, onSave }: ConnectionFormP
           <div className="space-y-2">
             <Label htmlFor="will_message">Will Message</Label>
             <Input
+              onGreyBg
               id="will_message"
               value={connection.will_message}
               onChange={(e) => updateField("will_message", e.target.value)}
@@ -142,6 +146,7 @@ export function ConnectionForm({ connection, onChange, onSave }: ConnectionFormP
           <div className="space-y-2">
             <Label htmlFor="username">Username</Label>
             <Input
+              onGreyBg
               id="username"
               value={connection.username}
               onChange={(e) => updateField("username", e.target.value)}
@@ -153,6 +158,7 @@ export function ConnectionForm({ connection, onChange, onSave }: ConnectionFormP
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <Input
+              onGreyBg
               id="password"
               type="password"
               value={connection.password}
