@@ -264,7 +264,7 @@ export default function App() {
     const bridgeToDuplicate = config.bridges[index];
     const duplicatedBridge = JSON.parse(JSON.stringify(bridgeToDuplicate));
     // Optional: update name to indicate it's a duplicate
-    duplicatedBridge.name = `${bridgeToDuplicate.name} (Copy)`;
+    duplicatedBridge.name = `${bridgeToDuplicate.name}-copy`;
     const newConfig = {
       bridges: [...config.bridges, duplicatedBridge],
     };
