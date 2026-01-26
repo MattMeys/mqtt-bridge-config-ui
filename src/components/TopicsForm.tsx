@@ -91,15 +91,15 @@ export function TopicsForm({ topics, onChange, onSave }: TopicsFormProps) {
         {topics.map((topic, index) => (
           <div
             key={index}
-            className="inline-flex items-center gap-1 px-1 py-2 border-2 rounded-full hover:bg-primary/15 transition-colors"
-            style={{ borderColor: "var(--primary)" }}
+            className="inline-flex items-center gap-1 px-1 py-2 border-2 border-muted-foreground rounded-full bg-muted/30 hover:bg-primary/15 transition-colors"
+            
           >
             <Input
               value={topic.topic}
               onChange={(e) => updateTopic(index, "topic", e.target.value)}
               onBlur={onSave}
               placeholder="topic/pattern"
-              className="h-6 px-2 py-0 text-sm text-center  focus:bg-primary-foreground focus:border-0 focus-visible:ring-1 focus-visible:ring-offset-0 whitespace-nowrap"
+              className="h-6 px-2 py-0 text-sm text-center bg-background focus:bg-primary-foreground focus:border-0 focus-visible:ring-1 focus-visible:ring-offset-0 whitespace-nowrap"
               style={{ width: Math.max(100, Math.ceil(topic.topic.length * 8)) + "px" }}
             />
             

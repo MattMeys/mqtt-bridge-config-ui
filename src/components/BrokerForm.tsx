@@ -12,6 +12,24 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collap
 import { Checkbox } from "./ui/checkbox";
 import { useState } from "react";
 
+function getNetworkAddress(network: Network): string {
+  switch (network.protocol) {
+    case "in":
+    case "in6":
+      return network[network.protocol]
+        ? `${network[network.protocol]!.host}:${network[network.protocol]!.port}`
+        : "";
+    case "l2":
+      return network.l2 ? `${network.l2.host}:${network.l2.channel}` : "";
+    case "rc":
+      return network.rc ? `${network.rc.host}:${network.rc.channel}` : "";
+    case "un":
+      return network.un ? network.un.path : "";
+    default:
+      return "";
+  }
+}
+
 interface BrokerFormProps {
   broker: Broker;
   index: number;
@@ -65,9 +83,9 @@ export function BrokerForm({ broker, index, canDelete, onChange, onSave, onDelet
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card className={`${broker.disabled ? 'opacity-50' : ''} gap-1`}>
+      <Card className={`${broker.disabled ? 'opacity-50' : ''} gap-0`}>
         <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-3 pt-3">
-          <CollapsibleTrigger className="flex items-center gap-2 hover:opacity-70 transition-opacity flex-shrink-0">
+          <CollapsibleTrigger className="flex items-center gap-2 hover:opacity-70 transition-opacity shrink-0">
             <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             <span className="text-sm text-muted-foreground">Broker {index + 1}</span>
           </CollapsibleTrigger>
@@ -82,8 +100,9 @@ export function BrokerForm({ broker, index, canDelete, onChange, onSave, onDelet
               className="h-9"
             />
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <Checkbox
+              style={{ borderColor: "var(--primary)" }}
               id={`broker-enabled-${index}`}
               checked={!broker.disabled}
               onCheckedChange={(checked) => {
@@ -94,11 +113,30 @@ export function BrokerForm({ broker, index, canDelete, onChange, onSave, onDelet
             />
           </div>
           {canDelete && (
-            <Button onClick={onDelete} size="icon" variant="ghost" className="flex-shrink-0">
+            <Button onClick={onDelete} size="icon" variant="ghost" className="shrink-0">
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
         </CardHeader>
+        {!isOpen && (
+          <div className="px-28 pb-3 flex items-center gap-3 flex-wrap text-xs">
+            {getNetworkAddress(broker.network) && (
+              <span className="font-mono text-accent-foreground">{getNetworkAddress(broker.network)}</span>
+            )}
+            {broker.topics.length > 0 && (
+              <div className="flex gap-1 flex-wrap">
+                {broker.topics.map((topic, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center justify-center h-5 px-2 rounded-full border border-muted-foreground text-muted-foreground bg-muted/30"
+                  >
+                    {topic.topic}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <CollapsibleContent>
           <CardContent className="space-y-6">
 
