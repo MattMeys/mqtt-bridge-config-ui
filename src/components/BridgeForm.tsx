@@ -3,13 +3,19 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Plus, Trash2, ChevronDown } from "lucide-react";
+import { Plus, Trash2, ChevronDown, MoreVertical, Copy } from "lucide-react";
 import { BrokerForm } from "./BrokerForm";
 import { Alert, AlertDescription } from "./ui/alert";
 import { AlertCircle } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import { Checkbox } from "./ui/checkbox";
 import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 interface BridgeFormProps {
   bridge: Bridge;
@@ -17,9 +23,10 @@ interface BridgeFormProps {
   onChange: (bridge: Bridge) => void;
   onSave: () => void;
   onDelete: () => void;
+  onDuplicate: () => void;
 }
 
-export function BridgeForm({ bridge, index, onChange, onSave, onDelete }: BridgeFormProps) {
+export function BridgeForm({ bridge, index, onChange, onSave, onDelete, onDuplicate }: BridgeFormProps) {
   const [isOpen, setIsOpen] = useState(true);
   const updateField = <K extends keyof Bridge>(field: K, value: Bridge[K]) => {
     onChange({ ...bridge, [field]: value });
@@ -66,57 +73,79 @@ export function BridgeForm({ bridge, index, onChange, onSave, onDelete }: Bridge
             <Checkbox
               id={`bridge-enabled-${index}`}
               checked={!bridge.disabled}
-              onCheckedChange={(checked) => {
+              onCheckedChange={(checked: boolean) => {
                 updateField("disabled", !checked);
                 setTimeout(onSave, 0);
               }}
               title={bridge.disabled ? "Enable bridge" : "Disable bridge"}
             />
           </div>
-          <Button onClick={onDelete} size="icon" variant="ghost" className="flex-shrink-0">
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div>
+                <Button size="icon" variant="ghost" className="flex-shrink-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onDuplicate}>
+                <Copy className="h-4 w-4" />
+                Duplicate Bridge
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onDelete}>
+                <Trash2 className="h-4 w-4" />
+                Delete Bridge
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </CardHeader>
         <CollapsibleContent>
           <CardContent className="space-y-6 pt-0">
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Brokers</Label>
-              <p className="text-sm text-muted-foreground mt-1">
-                At least 2 brokers required
-              </p>
+            <div className="space-y-4">
+              {/* <div className="flex items-center justify-between">
+                <div>
+                  <Label>Brokers</Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    At least 2 brokers required
+                  </p>
+                </div>
+                <Button onClick={addBroker} size="sm" variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Smoker
+                </Button>
+              </div> */}
+
+              {bridge.brokers.length < 2 && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    A bridge requires at least 2 brokers to function properly.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-4">
+                {bridge.brokers.map((broker, brokerIndex) => (
+                  <BrokerForm
+                    key={brokerIndex}
+                    broker={broker}
+                    index={brokerIndex}
+                    canDelete={bridge.brokers.length > 2}
+                    onChange={(updatedBroker) => updateBroker(brokerIndex, updatedBroker)}
+                    onSave={onSave}
+                    onDelete={() => removeBroker(brokerIndex)}
+                  />
+                ))}
+              </div>
+
+              <Button onClick={addBroker}  variant="outline">
+                <Plus className=" w-full" />
+                Add Broker
+              </Button>
+
             </div>
-            <Button onClick={addBroker} size="sm" variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Broker
-            </Button>
-          </div>
-
-          {bridge.brokers.length < 2 && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                A bridge requires at least 2 brokers to function properly.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <div className="space-y-4">
-            {bridge.brokers.map((broker, brokerIndex) => (
-              <BrokerForm
-                key={brokerIndex}
-                broker={broker}
-                index={brokerIndex}
-                canDelete={bridge.brokers.length > 2}
-                onChange={(updatedBroker) => updateBroker(brokerIndex, updatedBroker)}
-                onSave={onSave}
-                onDelete={() => removeBroker(brokerIndex)}
-              />
-            ))}
-          </div>
-        </div>
           </CardContent>
         </CollapsibleContent>
       </Card>

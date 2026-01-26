@@ -65,7 +65,7 @@ export function BrokerForm({ broker, index, canDelete, onChange, onSave, onDelet
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card className={broker.disabled ? 'opacity-50' : ''}>
+      <Card className={`${broker.disabled ? 'opacity-50' : ''} gap-1`}>
         <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-3 pt-3">
           <CollapsibleTrigger className="flex items-center gap-2 hover:opacity-70 transition-opacity flex-shrink-0">
             <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -102,96 +102,96 @@ export function BrokerForm({ broker, index, canDelete, onChange, onSave, onDelet
         <CollapsibleContent>
           <CardContent className="space-y-4">
 
-        <div className="space-y-2">
-          <Label htmlFor={`session-store-${index}`}>Session Store</Label>
-          <Input
-            id={`session-store-${index}`}
-            value={broker.session_store}
-            onChange={(e) => updateField("session_store", e.target.value)}
-            onBlur={onSave}
-            placeholder="Optional path to session store"
-          />
-        </div>
+            <NetworkAddressForm
+              network={broker.network}
+              onChange={(network) => updateField("network", network)}
+              onSave={onSave}
+            />
 
-        <div className="grid grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor={`protocol-${index}`}>Protocol</Label>
-            <Select
-              value={broker.network.protocol}
-              onValueChange={(value) => {
-                updateNetworkField("protocol", value as any);
-                setTimeout(onSave, 0);
-              }}
-            >
-              <SelectTrigger id={`protocol-${index}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="in">IPv4 (in)</SelectItem>
-                <SelectItem value="in6">IPv6 (in6)</SelectItem>
-                <SelectItem value="l2">Bluetooth L2CAP (l2)</SelectItem>
-                <SelectItem value="rc">Bluetooth RFCOMM (rc)</SelectItem>
-                <SelectItem value="un">Unix Socket (un)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor={`session-store-${index}`}>Session Store</Label>
+              <Input
+                id={`session-store-${index}`}
+                value={broker.session_store}
+                onChange={(e) => updateField("session_store", e.target.value)}
+                onBlur={onSave}
+                placeholder="Optional path to session store"
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor={`encryption-${index}`}>Encryption</Label>
-            <Select
-              value={broker.network.encryption}
-              onValueChange={(value) => {
-                updateNetworkField("encryption", value as any);
-                setTimeout(onSave, 0);
-              }}
-            >
-              <SelectTrigger id={`encryption-${index}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="legacy">Legacy</SelectItem>
-                <SelectItem value="tls">TLS</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor={`protocol-${index}`}>Protocol</Label>
+                <Select
+                  value={broker.network.protocol}
+                  onValueChange={(value) => {
+                    updateNetworkField("protocol", value as any);
+                    setTimeout(onSave, 0);
+                  }}
+                >
+                  <SelectTrigger id={`protocol-${index}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="in">IPv4 (in)</SelectItem>
+                    <SelectItem value="in6">IPv6 (in6)</SelectItem>
+                    <SelectItem value="l2">Bluetooth L2CAP (l2)</SelectItem>
+                    <SelectItem value="rc">Bluetooth RFCOMM (rc)</SelectItem>
+                    <SelectItem value="un">Unix Socket (un)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor={`transport-${index}`}>Transport</Label>
-            <Select
-              value={broker.network.transport}
-              onValueChange={(value) => {
-                updateNetworkField("transport", value as any);
-                setTimeout(onSave, 0);
-              }}
-            >
-              <SelectTrigger id={`transport-${index}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="stream">Stream</SelectItem>
-                <SelectItem value="websocket">WebSocket</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+              <div className="space-y-2">
+                <Label htmlFor={`encryption-${index}`}>Encryption</Label>
+                <Select
+                  value={broker.network.encryption}
+                  onValueChange={(value) => {
+                    updateNetworkField("encryption", value as any);
+                    setTimeout(onSave, 0);
+                  }}
+                >
+                  <SelectTrigger id={`encryption-${index}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="legacy">Legacy</SelectItem>
+                    <SelectItem value="tls">TLS</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-        <NetworkAddressForm
-          network={broker.network}
-          onChange={(network) => updateField("network", network)}
-          onSave={onSave}
-        />
+              <div className="space-y-2">
+                <Label htmlFor={`transport-${index}`}>Transport</Label>
+                <Select
+                  value={broker.network.transport}
+                  onValueChange={(value) => {
+                    updateNetworkField("transport", value as any);
+                    setTimeout(onSave, 0);
+                  }}
+                >
+                  <SelectTrigger id={`transport-${index}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="stream">Stream</SelectItem>
+                    <SelectItem value="websocket">WebSocket</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-        <ConnectionForm
-          connection={broker.mqtt || defaultMqtt}
-          onChange={(mqtt) => updateField("mqtt", mqtt)}
-          onSave={onSave}
-        />
+            <ConnectionForm
+              connection={broker.mqtt || defaultMqtt}
+              onChange={(mqtt) => updateField("mqtt", mqtt)}
+              onSave={onSave}
+            />
 
-        <TopicsForm
-          topics={broker.topics}
-          onChange={(topics) => updateField("topics", topics)}
-          onSave={onSave}
-        />
+            <TopicsForm
+              topics={broker.topics}
+              onChange={(topics) => updateField("topics", topics)}
+              onSave={onSave}
+            />
           </CardContent>
         </CollapsibleContent>
       </Card>

@@ -258,6 +258,20 @@ export default function App() {
     sendPatchToServer(newConfig);
   };
 
+  const duplicateBridge = (index: number) => {
+    const bridgeToDuplicate = config.bridges[index];
+    const duplicatedBridge = JSON.parse(JSON.stringify(bridgeToDuplicate));
+    // Optional: update name to indicate it's a duplicate
+    duplicatedBridge.name = `${bridgeToDuplicate.name} (Copy)`;
+    const newConfig = {
+      bridges: [...config.bridges, duplicatedBridge],
+    };
+    setConfig(newConfig);
+    // Update latest ref synchronously
+    latestConfigRef.current = newConfig;
+    sendPatchToServer(newConfig);
+  };
+
   const updateBridge = (index: number, bridge: any) => {
     const newBridges = [...config.bridges];
     newBridges[index] = bridge;
@@ -333,6 +347,7 @@ export default function App() {
                   onChange={(updatedBridge) => updateBridge(index, updatedBridge)}
                   onSave={handleSaveToServer}
                   onDelete={() => removeBridge(index)}
+                  onDuplicate={() => duplicateBridge(index)}
                 />
               ))}
             </div>
