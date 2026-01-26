@@ -2,11 +2,73 @@ import { useState, useEffect, useRef } from "react";
 import { BridgesConfig, defaultBridge } from "./types/mqtt-bridge";
 import { BridgeForm } from "./components/BridgeForm";
 import { Button } from "./components/ui/button";
-import { Plus, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle2, Circle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "./components/ui/alert";
 import { toast } from "sonner@2.0.3";
 import { Toaster } from "./components/ui/sonner";
 import logo from "figma:asset/0edd3e9239d6ff6f8f9c5985d785e309773e3d03.png";
+
+interface BridgeStatus {
+  state: "running" | "stopped" | "restarting";
+  since: string;
+}
+
+// Format elapsed time from ISO string
+function formatElapsedTime(sinceISO: string): string {
+  const since = new Date(sinceISO);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - since.getTime()) / 1000);
+  
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+  return `${Math.floor(seconds / 86400)}d`;
+}
+
+// Status indicator component
+function StatusIndicator({ status }: { status: BridgeStatus }) {
+  const [elapsedTime, setElapsedTime] = useState(formatElapsedTime(status.since));
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsedTime(formatElapsedTime(status.since));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [status.since]);
+
+  const getStatusColor = () => {
+    switch (status.state) {
+      case "running":
+        return "bg-green-500";
+      case "restarting":
+        return "bg-yellow-500";
+      case "stopped":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  const getStatusText = () => {
+    switch (status.state) {
+      case "running":
+        return `Running for ${elapsedTime}`;
+      case "restarting":
+        return `Restarting for ${elapsedTime}`;
+      case "stopped":
+        return `Stopped for ${elapsedTime}`;
+      default:
+        return "Unknown";
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <Circle className={`h-3 w-3 fill-current ${getStatusColor()}`} />
+      <span className="text-sm font-medium">{getStatusText()}</span>
+    </div>
+  );
+}
 
 // Precise JSON patch comparison function
 function generateJSONPatch(oldObj: any, newObj: any, path = ""): any[] {
@@ -83,6 +145,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [hasAttemptedValidation, setHasAttemptedValidation] = useState(false);
+  const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus | null>(null);
   
   // Keep track of the last saved config for generating patches
   const lastSavedConfigRef = useRef<BridgesConfig | null>(null);
@@ -93,7 +156,32 @@ export default function App() {
   // Load configuration on mount
   useEffect(() => {
     loadConfig();
+    connectToSSE();
   }, []);
+
+  const connectToSSE = () => {
+    const eventSource = new EventSource("/api/bridge/sse");
+
+    eventSource.onmessage = (event) => {
+      try {
+        const status = JSON.parse(event.data) as BridgeStatus;
+        setBridgeStatus(status);
+      } catch (error) {
+        console.error("Failed to parse SSE status message:", error);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error("SSE connection error:", error);
+      eventSource.close();
+      // Attempt to reconnect after 5 seconds
+      setTimeout(() => {
+        connectToSSE();
+      }, 5000);
+    };
+
+    return eventSource;
+  };
 
   const loadConfig = async () => {
     try {
@@ -325,10 +413,9 @@ export default function App() {
                 {config.bridges.length} bridge{config.bridges.length !== 1 ? "s" : ""} configured
               </p>
             </div>
-            <Button onClick={addBridge}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Bridge
-            </Button>
+            {bridgeStatus && (
+              <StatusIndicator status={bridgeStatus} />
+            )}
           </div>
 
           {config.bridges.length === 0 ? (
@@ -354,6 +441,11 @@ export default function App() {
               ))}
             </div>
           )}
+
+          <Button onClick={addBridge}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Bridge
+          </Button>
         </div>
 
         {/* Info Section */}
