@@ -118,6 +118,7 @@ export default function App() {
         description: error instanceof Error ? error.message : "Unknown error",
       });
       // Keep the default config if loading fails
+      latestConfigRef.current = config;
     } finally {
       setIsLoading(false);
     }
