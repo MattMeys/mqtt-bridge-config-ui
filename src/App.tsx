@@ -195,28 +195,8 @@ export default function App() {
         console.log("SSE connection established");
       };
 
-      // Handle generic messages (for debugging)
-      eventSource.onmessage = (event) => {
-        console.log("SSE message received:", event.type, event.data);
-      };
-
-      // Add a catch-all listener using a custom approach
-      const wrappedAddEventListener = eventSource.addEventListener.bind(eventSource);
-      let eventNamesLogged = false;
-      
-      // Intercept dispatchEvent to log all events
-      const originalDispatchEvent = eventSource.dispatchEvent.bind(eventSource);
-      (eventSource as any).dispatchEvent = function(event: Event) {
-        if (!eventNamesLogged || Math.random() < 0.1) {
-          // Log first 10 events to see all event types
-          console.log("SSE Event dispatched:", (event as any).type, (event as any).data);
-        }
-        return originalDispatchEvent(event);
-      };
-
       // Handle bridge_started event
       eventSource.addEventListener("bridge_started", (event) => {
-        console.log("bridge_started event received:", event.data);
         try {
           const data = JSON.parse(event.data);
           setBridgeStatus({
@@ -233,7 +213,6 @@ export default function App() {
 
       // Handle bridge_stopped event
       eventSource.addEventListener("bridge_stopped", (event) => {
-        console.log("bridge_stopped event received:", event.data);
         try {
           const data = JSON.parse(event.data);
           setBridgeStatus({
@@ -250,7 +229,6 @@ export default function App() {
 
       // Handle broker_connected event
       eventSource.addEventListener("broker_connected", (event) => {
-        console.log("broker_connected event received:", event.data);
         try {
           const data = JSON.parse(event.data);
           toast.success("Broker connected", {
@@ -263,7 +241,6 @@ export default function App() {
 
       // Handle broker_disconnected event
       eventSource.addEventListener("broker_disconnected", (event) => {
-        console.log("broker_disconnected event received:", event.data);
         try {
           const data = JSON.parse(event.data);
           toast.warning("Broker disconnected", {
