@@ -152,82 +152,127 @@ export default function App() {
   // Keep a synchronous reference to the latest in-memory config so
   // immediate saves (e.g. checkbox toggles) can use it before state commits
   const latestConfigRef = useRef<BridgesConfig>(config);
+  // Store EventSource for cleanup
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const reconnectTimeoutRef = useRef<number | null>(null);
 
   // Load configuration on mount
   useEffect(() => {
     loadConfig();
     connectToSSE();
+    
+    // Cleanup function
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+    };
   }, []);
 
   const connectToSSE = () => {
-    const eventSource = new EventSource("/api/bridge/sse");
+    // Close existing connection if any
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+    
+    // Clear any pending reconnect timeout
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
 
-    // Handle bridge_started event
-    eventSource.addEventListener("bridge_started", (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        setBridgeStatus({
-          state: "running",
-          since: data.at,
-        });
-        toast.success("Bridge started", {
-          description: `Started at ${new Date(data.at).toLocaleString()}`,
-        });
-      } catch (error) {
-        console.error("Failed to parse bridge_started event:", error);
-      }
-    });
+    try {
+      const eventSource = new EventSource("/api/bridge/sse");
+      eventSourceRef.current = eventSource;
 
-    // Handle bridge_stopped event
-    eventSource.addEventListener("bridge_stopped", (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        setBridgeStatus({
-          state: "stopped",
-          since: data.at,
-        });
-        toast.info("Bridge stopped", {
-          description: `Stopped at ${new Date(data.at).toLocaleString()}`,
-        });
-      } catch (error) {
-        console.error("Failed to parse bridge_stopped event:", error);
-      }
-    });
+      // Handle connection opened
+      eventSource.onopen = () => {
+        console.log("SSE connection established");
+      };
 
-    // Handle broker_connected event
-    eventSource.addEventListener("broker_connected", (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        toast.success("Broker connected", {
-          description: `${data.instance} connected at ${new Date(data.at).toLocaleString()}`,
-        });
-      } catch (error) {
-        console.error("Failed to parse broker_connected event:", error);
-      }
-    });
+      // Handle bridge_started event
+      eventSource.addEventListener("bridge_started", (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setBridgeStatus({
+            state: "running",
+            since: data.at,
+          });
+          toast.success("Bridge started", {
+            description: `Started at ${new Date(data.at).toLocaleString()}`,
+          });
+        } catch (error) {
+          console.error("Failed to parse bridge_started event:", error);
+        }
+      });
 
-    // Handle broker_disconnected event
-    eventSource.addEventListener("broker_disconnected", (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        toast.warning("Broker disconnected", {
-          description: `${data.instance} disconnected at ${new Date(data.at).toLocaleString()}`,
-        });
-      } catch (error) {
-        console.error("Failed to parse broker_disconnected event:", error);
-      }
-    });
+      // Handle bridge_stopped event
+      eventSource.addEventListener("bridge_stopped", (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setBridgeStatus({
+            state: "stopped",
+            since: data.at,
+          });
+          toast.info("Bridge stopped", {
+            description: `Stopped at ${new Date(data.at).toLocaleString()}`,
+          });
+        } catch (error) {
+          console.error("Failed to parse bridge_stopped event:", error);
+        }
+      });
 
-    eventSource.onerror = (error) => {
-      console.error("SSE connection error:", error);
-      eventSource.close();
-      // Attempt to reconnect after 5 seconds
-      setTimeout(() => {
+      // Handle broker_connected event
+      eventSource.addEventListener("broker_connected", (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          toast.success("Broker connected", {
+            description: `${data.instance} connected at ${new Date(data.at).toLocaleString()}`,
+          });
+        } catch (error) {
+          console.error("Failed to parse broker_connected event:", error);
+        }
+      });
+
+      // Handle broker_disconnected event
+      eventSource.addEventListener("broker_disconnected", (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          toast.warning("Broker disconnected", {
+            description: `${data.instance} disconnected at ${new Date(data.at).toLocaleString()}`,
+          });
+        } catch (error) {
+          console.error("Failed to parse broker_disconnected event:", error);
+        }
+      });
+
+      eventSource.onerror = (error) => {
+        console.error("SSE connection error:", error);
+        
+        // Close the failed connection
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close();
+          eventSourceRef.current = null;
+        }
+        
+        // Attempt to reconnect after 5 seconds
+        console.log("Attempting to reconnect in 5 seconds...");
+        reconnectTimeoutRef.current = window.setTimeout(() => {
+          connectToSSE();
+        }, 5000);
+      };
+    } catch (error) {
+      console.error("Failed to create SSE connection:", error);
+      // Retry after 5 seconds
+      reconnectTimeoutRef.current = window.setTimeout(() => {
         connectToSSE();
       }, 5000);
-    };
-
-    return eventSource;
+    }
   };
 
   const loadConfig = async () => {
