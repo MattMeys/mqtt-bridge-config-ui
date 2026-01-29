@@ -162,14 +162,61 @@ export default function App() {
   const connectToSSE = () => {
     const eventSource = new EventSource("/api/bridge/sse");
 
-    eventSource.onmessage = (event) => {
+    // Handle bridge_started event
+    eventSource.addEventListener("bridge_started", (event) => {
       try {
-        const status = JSON.parse(event.data) as BridgeStatus;
-        setBridgeStatus(status);
+        const data = JSON.parse(event.data);
+        setBridgeStatus({
+          state: "running",
+          since: data.at,
+        });
+        toast.success("Bridge started", {
+          description: `Started at ${new Date(data.at).toLocaleString()}`,
+        });
       } catch (error) {
-        console.error("Failed to parse SSE status message:", error);
+        console.error("Failed to parse bridge_started event:", error);
       }
-    };
+    });
+
+    // Handle bridge_stopped event
+    eventSource.addEventListener("bridge_stopped", (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        setBridgeStatus({
+          state: "stopped",
+          since: data.at,
+        });
+        toast.info("Bridge stopped", {
+          description: `Stopped at ${new Date(data.at).toLocaleString()}`,
+        });
+      } catch (error) {
+        console.error("Failed to parse bridge_stopped event:", error);
+      }
+    });
+
+    // Handle broker_connected event
+    eventSource.addEventListener("broker_connected", (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        toast.success("Broker connected", {
+          description: `${data.instance} connected at ${new Date(data.at).toLocaleString()}`,
+        });
+      } catch (error) {
+        console.error("Failed to parse broker_connected event:", error);
+      }
+    });
+
+    // Handle broker_disconnected event
+    eventSource.addEventListener("broker_disconnected", (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        toast.warning("Broker disconnected", {
+          description: `${data.instance} disconnected at ${new Date(data.at).toLocaleString()}`,
+        });
+      } catch (error) {
+        console.error("Failed to parse broker_disconnected event:", error);
+      }
+    });
 
     eventSource.onerror = (error) => {
       console.error("SSE connection error:", error);
