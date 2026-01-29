@@ -200,6 +200,20 @@ export default function App() {
         console.log("SSE message received:", event.type, event.data);
       };
 
+      // Add a catch-all listener using a custom approach
+      const wrappedAddEventListener = eventSource.addEventListener.bind(eventSource);
+      let eventNamesLogged = false;
+      
+      // Intercept dispatchEvent to log all events
+      const originalDispatchEvent = eventSource.dispatchEvent.bind(eventSource);
+      (eventSource as any).dispatchEvent = function(event: Event) {
+        if (!eventNamesLogged || Math.random() < 0.1) {
+          // Log first 10 events to see all event types
+          console.log("SSE Event dispatched:", (event as any).type, (event as any).data);
+        }
+        return originalDispatchEvent(event);
+      };
+
       // Handle bridge_started event
       eventSource.addEventListener("bridge_started", (event) => {
         console.log("bridge_started event received:", event.data);
