@@ -202,6 +202,7 @@ export default function App() {
 
       // Handle bridge_started event
       eventSource.addEventListener("bridge_started", (event) => {
+        console.log("bridge_started event received:", event.data);
         try {
           const data = JSON.parse(event.data);
           setBridgeStatus({
@@ -270,6 +271,20 @@ export default function App() {
         reconnectTimeoutRef.current = window.setTimeout(() => {
           connectToSSE();
         }, 5000);
+      };
+
+      // Catch-all handler to log all events
+      const originalAddEventListener = eventSource.addEventListener;
+      eventSource.addEventListener = function(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) {
+        const wrappedListener = function(event: Event) {
+          console.log(`Event "${type}" received:`, (event as any).data);
+          if (typeof listener === 'function') {
+            listener.call(this, event);
+          } else {
+            listener.handleEvent(event);
+          }
+        };
+        return originalAddEventListener.call(this, type, wrappedListener, options);
       };
     } catch (error) {
       console.error("Failed to create SSE connection:", error);
