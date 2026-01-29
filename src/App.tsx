@@ -195,6 +195,11 @@ export default function App() {
         console.log("SSE connection established");
       };
 
+      // Handle generic messages (for debugging)
+      eventSource.onmessage = (event) => {
+        console.log("SSE message received:", event.type, event.data);
+      };
+
       // Handle bridge_started event
       eventSource.addEventListener("bridge_started", (event) => {
         try {
@@ -410,9 +415,9 @@ export default function App() {
       // Update the last saved config
       lastSavedConfigRef.current = JSON.parse(JSON.stringify(newConfig));
       
-      toast.success("Configuration saved", {
-        description: `${patch.length} change${patch.length !== 1 ? 's' : ''} applied`,
-      });
+      // toast.success("Configuration saved", {
+      //   description: `${patch.length} change${patch.length !== 1 ? 's' : ''} applied`,
+      // });
     } catch (error) {
       toast.error("Failed to save configuration", {
         description: error instanceof Error ? error.message : "Unknown error",
