@@ -196,7 +196,7 @@ export default function App() {
       };
 
       // Handle bridge_started event
-      eventSource.addEventListener("bridge_started", (event) => {
+      eventSource.addEventListener("bridge_start", (event) => {
         try {
           const data = JSON.parse(event.data);
           setBridgeStatus({
