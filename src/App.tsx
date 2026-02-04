@@ -96,6 +96,9 @@ function SystemStatusText({ state, startTime }: { state?: BridgesSystemState | n
 
   useEffect(() => {
     if (state === "started" && startTime) {
+      // Set initial uptime
+      setUptime(Math.floor((Date.now() - startTime) / 1000));
+      // Then update every second
       const interval = setInterval(() => {
         setUptime(Math.floor((Date.now() - startTime) / 1000));
       }, 1000);
@@ -119,7 +122,7 @@ function SystemStatusText({ state, startTime }: { state?: BridgesSystemState | n
   if (!state) return null;
 
   let statusText = "";
-  let statusColor = "";
+  let statusColor = "muted-foreground";
 
   switch (state) {
     case "starting":
