@@ -138,6 +138,17 @@ function generateJSONPatch(oldObj: any, newObj: any, path = ""): any[] {
   return patches;
 }
 
+type BridgeState = "disabled" | "starting" | "started" | "stopping" | "stopped";
+type BrokerState = "disabled" | "connecting" | "connected" | "disconnecting" | "disconnected";
+
+interface BridgeStatusMap {
+  [bridgeName: string]: BridgeState;
+}
+
+interface BrokerStatusMap {
+  [key: string]: BrokerState; // key format: "bridgeName/instanceName"
+}
+
 export default function App() {
   const [config, setConfig] = useState<BridgesConfig>({
     bridges: [{ ...defaultBridge }],
@@ -146,6 +157,8 @@ export default function App() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [hasAttemptedValidation, setHasAttemptedValidation] = useState(false);
   const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus | null>(null);
+  const [bridgeStates, setBridgeStates] = useState<BridgeStatusMap>({});
+  const [brokerStates, setBrokerStates] = useState<BrokerStatusMap>({});
   
   // Keep track of the last saved config for generating patches
   const lastSavedConfigRef = useRef<BridgesConfig | null>(null);
@@ -219,6 +232,35 @@ export default function App() {
           try {
             const data = JSON.parse(event.data);
             console.log(`SSE Event [${eventName}]:`, data);
+            
+            // Update bridge states
+            if (eventName === "bridge_disabled" && data.name) {
+              setBridgeStates(prev => ({ ...prev, [data.name]: "disabled" }));
+            } else if (eventName === "bridge_starting" && data.name) {
+              setBridgeStates(prev => ({ ...prev, [data.name]: "starting" }));
+            } else if (eventName === "bridge_started" && data.name) {
+              setBridgeStates(prev => ({ ...prev, [data.name]: "started" }));
+            } else if (eventName === "bridge_stopping" && data.name) {
+              setBridgeStates(prev => ({ ...prev, [data.name]: "stopping" }));
+            } else if (eventName === "bridge_stopped" && data.name) {
+              setBridgeStates(prev => ({ ...prev, [data.name]: "stopped" }));
+            }
+            
+            // Update broker states
+            if (data.bridge && data.instance) {
+              const brokerKey = `${data.bridge}/${data.instance}`;
+              if (eventName === "broker_disabled") {
+                setBrokerStates(prev => ({ ...prev, [brokerKey]: "disabled" }));
+              } else if (eventName === "broker_connecting") {
+                setBrokerStates(prev => ({ ...prev, [brokerKey]: "connecting" }));
+              } else if (eventName === "broker_connected") {
+                setBrokerStates(prev => ({ ...prev, [brokerKey]: "connected" }));
+              } else if (eventName === "broker_disconnecting") {
+                setBrokerStates(prev => ({ ...prev, [brokerKey]: "disconnecting" }));
+              } else if (eventName === "broker_disconnected") {
+                setBrokerStates(prev => ({ ...prev, [brokerKey]: "disconnected" }));
+              }
+            }
             
             // Generate human-readable message
             let message = eventName.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
@@ -537,6 +579,8 @@ export default function App() {
                   key={index}
                   bridge={bridge}
                   index={index}
+                  bridgeState={bridgeStates[bridge.name]}
+                  brokerStates={brokerStates}
                   onChange={(updatedBridge) => updateBridge(index, updatedBridge)}
                   onSave={handleSaveToServer}
                   onDelete={() => removeBridge(index)}

@@ -3,7 +3,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Plus, Trash2, ChevronDown, MoreVertical, Copy } from "lucide-react";
+import { Plus, Trash2, ChevronDown, MoreVertical, Copy, Circle, Loader2 } from "lucide-react";
 import { BrokerForm } from "./BrokerForm";
 import { Alert, AlertDescription } from "./ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -17,16 +17,44 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 
+type BridgeState = "disabled" | "starting" | "started" | "stopping" | "stopped";
+type BrokerState = "disabled" | "connecting" | "connected" | "disconnecting" | "disconnected";
+
+interface BrokerStatusMap {
+  [key: string]: BrokerState;
+}
+
 interface BridgeFormProps {
   bridge: Bridge;
   index: number;
+  bridgeState?: BridgeState;
+  brokerStates: BrokerStatusMap;
   onChange: (bridge: Bridge) => void;
   onSave: () => void;
   onDelete: () => void;
   onDuplicate: () => void;
 }
 
-export function BridgeForm({ bridge, index, onChange, onSave, onDelete, onDuplicate }: BridgeFormProps) {
+function BridgeStatusIcon({ state }: { state?: BridgeState }) {
+  if (!state) return null;
+  
+  switch (state) {
+    case "started":
+      return <Circle className="h-4 w-4 fill-green-500 text-green-500" title="Started" />;
+    case "starting":
+      return <Loader2 className="h-4 w-4 text-yellow-500 animate-spin" title="Starting..." />;
+    case "stopping":
+      return <Loader2 className="h-4 w-4 text-orange-500 animate-spin" title="Stopping..." />;
+    case "stopped":
+      return <Circle className="h-4 w-4 fill-red-500 text-red-500" title="Stopped" />;
+    case "disabled":
+      return <Circle className="h-4 w-4 fill-gray-400 text-gray-400" title="Disabled" />;
+    default:
+      return null;
+  }
+}
+
+export function BridgeForm({ bridge, index, bridgeState, brokerStates, onChange, onSave, onDelete, onDuplicate }: BridgeFormProps) {
   const [isOpen, setIsOpen] = useState(true);
   const updateField = <K extends keyof Bridge>(field: K, value: Bridge[K]) => {
     onChange({ ...bridge, [field]: value });
@@ -70,7 +98,8 @@ export function BridgeForm({ bridge, index, onChange, onSave, onDelete, onDuplic
               className="h-9 bg-primary-foreground text-primary-foreground placeholder:text-primary-foreground/70"
             />
           </div>
-          <div className="flex items-center gap-2 shrink-0 ">
+          <div className="flex items-center gap-2 shrink-0">
+            <BridgeStatusIcon state={bridgeState} />
             <Checkbox
               id={`bridge-enabled-${index}`}
               checked={!bridge.disabled}
@@ -133,7 +162,9 @@ export function BridgeForm({ bridge, index, onChange, onSave, onDelete, onDuplic
                   <BrokerForm
                     key={brokerIndex}
                     broker={broker}
+                    bridgeName={bridge.name}
                     index={brokerIndex}
+                    brokerState={brokerStates[`${bridge.name}/${broker.network.instance_name}`]}
                     canDelete={bridge.brokers.length > 2}
                     onChange={(updatedBroker) => updateBroker(brokerIndex, updatedBroker)}
                     onSave={onSave}

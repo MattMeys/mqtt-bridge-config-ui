@@ -4,13 +4,34 @@ import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Card, CardContent, CardHeader } from "./ui/card";
 import { Button } from "./ui/button";
-import { Trash2, ChevronDown } from "lucide-react";
+import { Trash2, ChevronDown, Circle, Loader2 } from "lucide-react";
 import { ConnectionForm } from "./ConnectionForm";
 import { TopicsForm } from "./TopicsForm";
 import { NetworkAddressForm } from "./NetworkAddressForm";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import { Checkbox } from "./ui/checkbox";
 import { useState } from "react";
+
+type BrokerState = "disabled" | "connecting" | "connected" | "disconnecting" | "disconnected";
+
+function BrokerStatusIcon({ state }: { state?: BrokerState }) {
+  if (!state) return null;
+  
+  switch (state) {
+    case "connected":
+      return <Circle className="h-3.5 w-3.5 fill-green-500 text-green-500" title="Connected" />;
+    case "connecting":
+      return <Loader2 className="h-3.5 w-3.5 text-yellow-500 animate-spin" title="Connecting..." />;
+    case "disconnecting":
+      return <Loader2 className="h-3.5 w-3.5 text-orange-500 animate-spin" title="Disconnecting..." />;
+    case "disconnected":
+      return <Circle className="h-3.5 w-3.5 fill-red-500 text-red-500" title="Disconnected" />;
+    case "disabled":
+      return <Circle className="h-3.5 w-3.5 fill-gray-400 text-gray-400" title="Disabled" />;
+    default:
+      return null;
+  }
+}
 
 function getNetworkAddress(network: Network): string {
   switch (network.protocol) {
@@ -32,14 +53,16 @@ function getNetworkAddress(network: Network): string {
 
 interface BrokerFormProps {
   broker: Broker;
+  bridgeName: string;
   index: number;
+  brokerState?: BrokerState;
   canDelete: boolean;
   onChange: (broker: Broker) => void;
   onSave: () => void;
   onDelete: () => void;
 }
 
-export function BrokerForm({ broker, index, canDelete, onChange, onSave, onDelete }: BrokerFormProps) {
+export function BrokerForm({ broker, bridgeName, index, brokerState, canDelete, onChange, onSave, onDelete }: BrokerFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   
   const updateField = <K extends keyof Broker>(field: K, value: Broker[K]) => {
@@ -101,6 +124,7 @@ export function BrokerForm({ broker, index, canDelete, onChange, onSave, onDelet
             />
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <BrokerStatusIcon state={brokerState} />
             <Checkbox
               style={{ borderColor: "var(--primary)" }}
               id={`broker-enabled-${index}`}
