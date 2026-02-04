@@ -2,73 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { BridgesConfig, defaultBridge } from "./types/mqtt-bridge";
 import { BridgeForm } from "./components/BridgeForm";
 import { Button } from "./components/ui/button";
-import { Plus, AlertCircle, CheckCircle2, Circle } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle2, Circle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "./components/ui/alert";
 import { toast } from "sonner@2.0.3";
 import { Toaster } from "./components/ui/sonner";
+import { Tooltip, TooltipTrigger, TooltipContent } from "./components/ui/tooltip";
 import logo from "figma:asset/0edd3e9239d6ff6f8f9c5985d785e309773e3d03.png";
 
-interface BridgeStatus {
-  state: "running" | "stopped" | "restarting";
-  since: string;
-}
 
-// Format elapsed time from ISO string
-function formatElapsedTime(sinceISO: string): string {
-  const since = new Date(sinceISO);
-  const now = new Date();
-  const seconds = Math.floor((now.getTime() - since.getTime()) / 1000);
-  
-  if (seconds < 60) return `${seconds}s`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
-  return `${Math.floor(seconds / 86400)}d`;
-}
-
-// Status indicator component
-function StatusIndicator({ status }: { status: BridgeStatus }) {
-  const [elapsedTime, setElapsedTime] = useState(formatElapsedTime(status.since));
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setElapsedTime(formatElapsedTime(status.since));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [status.since]);
-
-  const getStatusColor = () => {
-    switch (status.state) {
-      case "running":
-        return "bg-green-500";
-      case "restarting":
-        return "bg-yellow-500";
-      case "stopped":
-        return "bg-red-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
-  const getStatusText = () => {
-    switch (status.state) {
-      case "running":
-        return `Running for ${elapsedTime}`;
-      case "restarting":
-        return `Restarting for ${elapsedTime}`;
-      case "stopped":
-        return `Stopped for ${elapsedTime}`;
-      default:
-        return "Unknown";
-    }
-  };
-
-  return (
-    <div className="flex items-center gap-2">
-      <Circle className={`h-3 w-3 fill-current ${getStatusColor()}`} />
-      <span className="text-sm font-medium">{getStatusText()}</span>
-    </div>
-  );
-}
 
 // Precise JSON patch comparison function
 function generateJSONPatch(oldObj: any, newObj: any, path = ""): any[] {
@@ -140,6 +81,7 @@ function generateJSONPatch(oldObj: any, newObj: any, path = ""): any[] {
 
 type BridgeState = "disabled" | "starting" | "started" | "stopping" | "stopped";
 type BrokerState = "disabled" | "connecting" | "connected" | "disconnecting" | "disconnected";
+type BridgesSystemState = "starting" | "started" | "stopping" | "stopped";
 
 interface BridgeStatusMap {
   [bridgeName: string]: BridgeState;
@@ -149,6 +91,58 @@ interface BrokerStatusMap {
   [key: string]: BrokerState; // key format: "bridgeName/instanceName"
 }
 
+function SystemStatusIcon({ state }: { state?: BridgesSystemState | null }) {
+  if (!state) return null;
+  
+  const statusLabels: Record<BridgesSystemState, string> = {
+    started: "System Started",
+    starting: "System Starting",
+    stopping: "System Stopping",
+    stopped: "System Stopped",
+  };
+  
+  switch (state) {
+    case "started":
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Circle className="h-5 w-5 fill-green-500 text-green-500" />
+          </TooltipTrigger>
+          <TooltipContent>{statusLabels.started}</TooltipContent>
+        </Tooltip>
+      );
+    case "starting":
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Loader2 className="h-5 w-5 text-yellow-500 animate-spin" />
+          </TooltipTrigger>
+          <TooltipContent>{statusLabels.starting}</TooltipContent>
+        </Tooltip>
+      );
+    case "stopping":
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Loader2 className="h-5 w-5 text-orange-500 animate-spin" />
+          </TooltipTrigger>
+          <TooltipContent>{statusLabels.stopping}</TooltipContent>
+        </Tooltip>
+      );
+    case "stopped":
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Circle className="h-5 w-5 fill-red-500 text-red-500" />
+          </TooltipTrigger>
+          <TooltipContent>{statusLabels.stopped}</TooltipContent>
+        </Tooltip>
+      );
+    default:
+      return null;
+  }
+}
+
 export default function App() {
   const [config, setConfig] = useState<BridgesConfig>({
     bridges: [{ ...defaultBridge }],
@@ -156,9 +150,9 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [hasAttemptedValidation, setHasAttemptedValidation] = useState(false);
-  const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus | null>(null);
   const [bridgeStates, setBridgeStates] = useState<BridgeStatusMap>({});
   const [brokerStates, setBrokerStates] = useState<BrokerStatusMap>({});
+  const [bridgesSystemState, setBridgesSystemState] = useState<BridgesSystemState | null>(null);
   
   // Keep track of the last saved config for generating patches
   const lastSavedConfigRef = useRef<BridgesConfig | null>(null);
@@ -265,31 +259,27 @@ export default function App() {
                 setBrokerStates(prev => ({ ...prev, [brokerKey]: "disconnected" }));
               }
             }
-            
-            // Generate human-readable message
-            let message = eventName.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-            if (data.name) {
-              message += `: ${data.name}`;
-            } else if (data.bridge && data.instance) {
-              const instanceName =
-                typeof data.instance === "string" && data.instance.includes("+")
-                  ? data.instance.split("+").pop()
-                  : data.instance;
-              message += `: ${data.bridge}/${instanceName}`;
-            }
-            if (data.at) {
-              message += ` (${data.at})`;
+
+            // Update system state
+            if (eventName === "bridges_starting") {
+              setBridgesSystemState("starting");
+            } else if (eventName === "bridges_started") {
+              setBridgesSystemState("started");
+            } else if (eventName === "bridges_stopping") {
+              setBridgesSystemState("stopping");
+            } else if (eventName === "bridges_stopped") {
+              setBridgesSystemState("stopped");
             }
 
             
             // Update bridge status for relevant events
             if (eventName === "bridges_started" && data.at) {
-              setBridgeStatus({
+              setBridgesStatus({
                 state: "running",
                 since: data.at,
               });
             } else if (eventName === "bridges_stopped" && data.at) {
-              setBridgeStatus({
+              setBridgesStatus({
                 state: "stopped",
                 since: data.at,
               });
@@ -460,9 +450,6 @@ export default function App() {
       // Update the last saved config
       lastSavedConfigRef.current = JSON.parse(JSON.stringify(newConfig));
       
-      // toast.success("Configuration saved", {
-      //   description: `${patch.length} change${patch.length !== 1 ? 's' : ''} applied`,
-      // });
     } catch (error) {
       toast.error("Failed to save configuration", {
         description: error instanceof Error ? error.message : "Unknown error",
@@ -555,8 +542,11 @@ export default function App() {
                 {config.bridges.length} bridge{config.bridges.length !== 1 ? "s" : ""} configured
               </p>
             </div>
-            {bridgeStatus && (
-              <StatusIndicator status={bridgeStatus} />
+            {bridgesSystemState && (
+              // Status indicator for overall bridge system
+              <div className="flex items-center gap-4">
+                <SystemStatusIcon state={bridgesSystemState} />
+              </div>
             )}
           </div>
 
