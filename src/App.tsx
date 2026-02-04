@@ -122,15 +122,13 @@ function SystemStatusText({ state, startTime }: { state?: BridgesSystemState | n
   if (!state) return null;
 
   let statusText = "";
-  let uptimeText = "";
 
   switch (state) {
     case "starting":
       statusText = "system pending...";
       break;
     case "started":
-      statusText = `system running`;
-      uptimeText = `uptime: ${formatUptime(uptime)}`;
+      statusText = `running - uptime: ${formatUptime(uptime)}`;
       break;
     case "stopping":
       statusText = "shutting down";
@@ -143,9 +141,8 @@ function SystemStatusText({ state, startTime }: { state?: BridgesSystemState | n
   }
 
   return (
-    <div className={`text-sm font-medium text-muted-foreground`}>
-      <p>{statusText}</p>
-      {uptimeText && <p className="text-xs text-muted-foreground">{uptimeText}</p>}
+    <div className={`text-xs font-medium text-muted-foreground`}>
+      {statusText}
     </div>
   );
 }
