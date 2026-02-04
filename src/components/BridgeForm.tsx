@@ -178,20 +178,7 @@ export function BridgeForm({ bridge, index, bridgeState, brokerStates, onChange,
         </CardHeader>
         <CollapsibleContent>
           <CardContent className="space-y-6 pt-0">
-
             <div className="space-y-4">
-              {/* <div className="flex items-center justify-between">
-                <div>
-                  <Label>Brokers</Label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    At least 2 brokers required
-                  </p>
-                </div>
-                <Button onClick={addBroker} size="sm" variant="outline">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Smoker
-                </Button>
-              </div> */}
 
               {bridge.brokers.length < 2 && (
                 <Alert variant="destructive">
