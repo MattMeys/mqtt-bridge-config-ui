@@ -475,8 +475,12 @@ export default function App() {
   const duplicateBridge = (index: number) => {
     const bridgeToDuplicate = config.bridges[index];
     const duplicatedBridge = JSON.parse(JSON.stringify(bridgeToDuplicate));
-    // Optional: update name to indicate it's a duplicate
-    duplicatedBridge.name = `${bridgeToDuplicate.name}-copy`;
+    // update name to indicate it's a duplicate
+    if (duplicatedBridge.name && duplicatedBridge.name !== "") {
+      duplicatedBridge.name = `${bridgeToDuplicate.name}-copy`;
+    } else {
+      duplicatedBridge.name = "copy";
+    }
     const newConfig = {
       bridges: [...config.bridges, duplicatedBridge],
     };
@@ -582,11 +586,9 @@ export default function App() {
           <h3 className="mb-3">Configuration Guide</h3>
           <div className="space-y-2 text-sm text-muted-foreground">
             <p>• Each bridge connects 2 or more MQTT brokers together</p>
-            <p>• Topics use MQTT wildcard patterns: # (multi-level) and + (single-level)</p>
-            <p>• QoS levels: 0 (at most once), 1 (at least once), 2 (exactly once)</p>
-            <p>• Enable loop prevention to avoid message cycles between brokers</p>
-            <p>• Use TLS encryption for secure connections over public networks</p>
-            <p>• Changes are automatically saved when you finish editing a field</p>
+            <p>• Messages on selected Topics will be forwarded to all other brokers of a bridge</p>
+            <p>• Topics support MQTT wildcard patterns like # (multi-level) and + (single-level) to bridge all messages</p>
+            <p>• Any changes to the Configuration are saved automatically and cause a restart of the bridge</p>
           </div>
         </div>
       </div>
