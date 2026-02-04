@@ -97,10 +97,10 @@ function SystemStatusText({ state, startTime }: { state?: BridgesSystemState | n
   useEffect(() => {
     if (state === "started" && startTime) {
       // Set initial uptime
-      setUptime(Math.max(0, Math.floor((Date.now() - startTime) / 1000)));
+      setUptime(Math.floor((Date.now() - startTime) / 1000)+1);
       // Then update every second
       const interval = setInterval(() => {
-        setUptime(Math.max(0, Math.floor((Date.now() - startTime) / 1000)));
+        setUptime(Math.floor((Date.now() - startTime) / 1000)+1);
       }, 1000);
       return () => clearInterval(interval);
     }
@@ -122,32 +122,30 @@ function SystemStatusText({ state, startTime }: { state?: BridgesSystemState | n
   if (!state) return null;
 
   let statusText = "";
-  let statusColor = "text-muted-foreground";
+  let uptimeText = "";
 
   switch (state) {
     case "starting":
       statusText = "system pending...";
-      // statusColor = "text-yellow-600";
       break;
     case "started":
-      statusText = `system running\nuptime: ${formatUptime(uptime)}`;
-      //statusColor = "text-green-600";
+      statusText = `system running`;
+      uptimeText = `uptime: ${formatUptime(uptime)}`;
       break;
     case "stopping":
       statusText = "shutting down";
-      //statusColor = "text-orange-600";
       break;
     case "stopped":
       statusText = "system down";
-      //statusColor = "text-red-600";
       break;
     default:
       return null;
   }
 
   return (
-    <div className={`text-sm font-medium ${statusColor}`}>
-      {statusText}
+    <div className={`text-sm font-medium text-muted-foreground`}>
+      <p>{statusText}</p>
+      {uptimeText && <p className="text-xs text-muted-foreground">{uptimeText}</p>}
     </div>
   );
 }
@@ -535,7 +533,7 @@ export default function App() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-end justify-between">
             <div>
               <h2>Bridges</h2>
               <p className="text-muted-foreground mt-1">
@@ -544,7 +542,7 @@ export default function App() {
             </div>
             {bridgesSystemState && (
               // Status indicator for overall bridge system
-              <div className="flex h-max items-end gap-4">
+              <div className="flex items-end gap-4">
                 <SystemStatusText state={bridgesSystemState} startTime={systemStartTime} />
               </div>
             )}
