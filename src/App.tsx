@@ -124,19 +124,19 @@ function SystemStatusText({ state, startTime }: { state?: BridgesSystemState | n
   switch (state) {
     case "starting":
       statusText = "system pending...";
-      statusColor = "text-yellow-600";
+      // statusColor = "text-yellow-600";
       break;
     case "started":
-      statusText = `system running - uptime: ${formatUptime(uptime)}`;
-      statusColor = "text-green-600";
+      statusText = `system running\nuptime: ${formatUptime(uptime)}`;
+      //statusColor = "text-green-600";
       break;
     case "stopping":
       statusText = "shutting down";
-      statusColor = "text-orange-600";
+      //statusColor = "text-orange-600";
       break;
     case "stopped":
       statusText = "system down";
-      statusColor = "text-red-600";
+      //statusColor = "text-red-600";
       break;
     default:
       return null;
@@ -272,7 +272,9 @@ export default function App() {
               setSystemStartTime(null);
             } else if (eventName === "bridges_started") {
               setBridgesSystemState("started");
-              setSystemStartTime(Date.now());
+              // Use the timestamp from the event data if available, otherwise use current time
+              const startTime = data.at ? new Date(data.at).getTime() : Date.now();
+              setSystemStartTime(startTime);
             } else if (eventName === "bridges_stopping") {
               setBridgesSystemState("stopping");
             } else if (eventName === "bridges_stopped") {
@@ -539,7 +541,7 @@ export default function App() {
             </div>
             {bridgesSystemState && (
               // Status indicator for overall bridge system
-              <div className="flex items-center gap-4">
+              <div className="flex items-end gap-4">
                 <SystemStatusText state={bridgesSystemState} startTime={systemStartTime} />
               </div>
             )}
