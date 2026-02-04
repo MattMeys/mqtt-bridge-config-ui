@@ -37,6 +37,7 @@ export function ConnectionForm({ connection, onChange, onSave }: ConnectionFormP
               value={connection.client_id}
               onChange={(e) => updateField("client_id", e.target.value)}
               onBlur={onSave}
+              onKeyDown={(e) => e.key === 'Enter' && onSave()}
               placeholder="Auto-generated if empty"
             />
           </div>
@@ -50,6 +51,7 @@ export function ConnectionForm({ connection, onChange, onSave }: ConnectionFormP
               value={connection.keep_alive}
               onChange={(e) => updateField("keep_alive", parseInt(e.target.value) || 60)}
               onBlur={onSave}
+              onKeyDown={(e) => e.key === 'Enter' && onSave()}
             />
           </div>
         </div>
@@ -89,6 +91,7 @@ export function ConnectionForm({ connection, onChange, onSave }: ConnectionFormP
                 onGreyBg
                 value={connection.will_topic}
                 onChange={(e) => updateField("will_topic", e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && onSave()}
                 onBlur={onSave}
                 placeholder="Optional"
               />
@@ -122,6 +125,7 @@ export function ConnectionForm({ connection, onChange, onSave }: ConnectionFormP
               id="will_message"
               value={connection.will_message}
               onChange={(e) => updateField("will_message", e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && onSave()}
               onBlur={onSave}
               placeholder="Optional"
             />
@@ -149,6 +153,7 @@ export function ConnectionForm({ connection, onChange, onSave }: ConnectionFormP
               onGreyBg
               id="username"
               value={connection.username}
+              onKeyDown={(e) => e.key === 'Enter' && onSave()}
               onChange={(e) => updateField("username", e.target.value)}
               onBlur={onSave}
               placeholder="Optional"
@@ -162,6 +167,7 @@ export function ConnectionForm({ connection, onChange, onSave }: ConnectionFormP
               id="password"
               type="password"
               value={connection.password}
+              onKeyDown={(e) => e.key === 'Enter' && onSave()}
               onChange={(e) => updateField("password", e.target.value)}
               onBlur={onSave}
               placeholder="Optional"

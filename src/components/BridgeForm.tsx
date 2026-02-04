@@ -93,6 +93,7 @@ export function BridgeForm({ bridge, index, bridgeState, brokerStates, onChange,
               value={bridge.name}
               onChange={(e) => updateField("name", e.target.value)}
               onBlur={onSave}
+              onKeyDown={(e) => e.key === 'Enter' && onSave()}
               placeholder="Bridge name (required)"
               required
               className="h-9 bg-primary-foreground text-primary-foreground placeholder:text-primary-foreground/70"

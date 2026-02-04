@@ -248,7 +248,11 @@ export default function App() {
             
             // Update broker states
             if (data.bridge && data.instance) {
-              const brokerKey = `${data.bridge}/${data.instance}`;
+              const instanceName =
+                typeof data.instance === "string" && data.instance.includes("+")
+                  ? data.instance.split("+").pop()
+                  : data.instance;
+              const brokerKey = `${data.bridge}/${instanceName}`;
               if (eventName === "broker_disabled") {
                 setBrokerStates(prev => ({ ...prev, [brokerKey]: "disabled" }));
               } else if (eventName === "broker_connecting") {
@@ -267,24 +271,16 @@ export default function App() {
             if (data.name) {
               message += `: ${data.name}`;
             } else if (data.bridge && data.instance) {
-              message += `: ${data.bridge}/${data.instance}`;
+              const instanceName =
+                typeof data.instance === "string" && data.instance.includes("+")
+                  ? data.instance.split("+").pop()
+                  : data.instance;
+              message += `: ${data.bridge}/${instanceName}`;
             }
             if (data.at) {
               message += ` (${data.at})`;
             }
-            
-            // Show toast based on event type
-            if (eventName.includes("started") || eventName.includes("connected")) {
-              toast.success(message);
-            } else if (eventName.includes("stopped") || eventName.includes("disconnected") || eventName.includes("disabled")) {
-              toast.error(message);
-            } else if (eventName.includes("starting") || eventName.includes("connecting")) {
-              toast.info(message);
-            } else if (eventName.includes("stopping") || eventName.includes("disconnecting")) {
-              toast.warning(message);
-            } else {
-              toast.info(message);
-            }
+
             
             // Update bridge status for relevant events
             if (eventName === "bridges_started" && data.at) {

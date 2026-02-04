@@ -9,7 +9,7 @@ interface NetworkAddressFormProps {
 }
 
 export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddressFormProps) {
-  const updateProtocolField = (protocol: Protocol, field: string, value: string | number) => {
+  const updateProtocolField = (protocol: Protocol, field: string, value: string | number, shouldSave: boolean = false) => {
     const updatedNetwork = { ...network };
     
     // Update the specific protocol field
@@ -47,6 +47,9 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
     }
     
     onChange(updatedNetwork);
+    if (shouldSave) {
+      onSave();
+    }
   };
 
   const renderAddressFields = () => {
@@ -62,6 +65,7 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
                 value={network.in?.host || ""}
                 onChange={(e) => updateProtocolField("in", "host", e.target.value)}
                 onBlur={onSave}
+                onKeyDown={(e) => e.key === 'Enter' && onSave()}
                 placeholder="e.g., 192.168.1.100"
               />
             </div>
@@ -74,8 +78,9 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
                 min="1"
                 max="65535"
                 value={network.in?.port || 1883}
-                onChange={(e) => updateProtocolField("in", "port", parseInt(e.target.value) || 1883)}
+                onChange={(e) => updateProtocolField("in", "port", parseInt(e.target.value) || 1883, true)}
                 onBlur={onSave}
+                onKeyDown={(e) => e.key === 'Enter' && onSave()}
                 placeholder="1883"
               />
             </div>
@@ -92,6 +97,7 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
                 id="ipv6-host"
                 value={network.in6?.host || ""}
                 onChange={(e) => updateProtocolField("in6", "host", e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && onSave()}
                 onBlur={onSave}
                 placeholder="e.g., ::1 or fe80::1"
               />
@@ -105,7 +111,8 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
                 min="1"
                 max="65535"
                 value={network.in6?.port || 1883}
-                onChange={(e) => updateProtocolField("in6", "port", parseInt(e.target.value) || 1883)}
+                onChange={(e) => updateProtocolField("in6", "port", parseInt(e.target.value) || 1883, true)}
+                onKeyDown={(e) => e.key === 'Enter' && onSave()}
                 onBlur={onSave}
                 placeholder="1883"
               />
@@ -122,6 +129,7 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
               onGreyBg
                 id="rc-host"
                 value={network.rc?.host || ""}
+                onKeyDown={(e) => e.key === 'Enter' && onSave()}
                 onChange={(e) => updateProtocolField("rc", "host", e.target.value)}
                 onBlur={onSave}
                 placeholder="00:1A:7D:DA:71:13"
@@ -137,7 +145,8 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
                 min="1"
                 max="30"
                 value={network.rc?.channel || 1}
-                onChange={(e) => updateProtocolField("rc", "channel", parseInt(e.target.value) || 1)}
+                onKeyDown={(e) => e.key === 'Enter' && onSave()}
+                onChange={(e) => updateProtocolField("rc", "channel", parseInt(e.target.value) || 1, true)}
                 onBlur={onSave}
                 placeholder="1"
               />
@@ -153,6 +162,7 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
               <Input
               onGreyBg
                 id="l2-host"
+                onKeyDown={(e) => e.key === 'Enter' && onSave()}
                 value={network.l2?.host || ""}
                 onChange={(e) => updateProtocolField("l2", "host", e.target.value)}
                 onBlur={onSave}
@@ -168,8 +178,9 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
                 type="number"
                 min="1"
                 max="65535"
+                onKeyDown={(e) => e.key === 'Enter' && onSave()}
                 value={network.l2?.psm || 1}
-                onChange={(e) => updateProtocolField("l2", "psm", parseInt(e.target.value) || 1)}
+                onChange={(e) => updateProtocolField("l2", "psm", parseInt(e.target.value) || 1, true)}
                 onBlur={onSave}
                 placeholder="1"
               />
@@ -183,6 +194,7 @@ export function NetworkAddressForm({ network, onChange, onSave }: NetworkAddress
             <Label htmlFor="un-path">Socket Path</Label>
             <Input
             onGreyBg
+              onKeyDown={(e) => e.key === 'Enter' && onSave()}
               id="un-path"
               value={network.un?.path || ""}
               onChange={(e) => updateProtocolField("un", "path", e.target.value)}

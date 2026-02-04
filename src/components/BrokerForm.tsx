@@ -118,6 +118,7 @@ export function BrokerForm({ broker, bridgeName, index, brokerState, canDelete, 
               value={broker.network.instance_name}
               onChange={(e) => updateNetworkField("instance_name", e.target.value)}
               onBlur={onSave}
+              onKeyDown={(e) => e.key === 'Enter' && onSave()}
               placeholder="Instance name (required)"
               required
               className="h-9"
@@ -240,6 +241,7 @@ export function BrokerForm({ broker, bridgeName, index, brokerState, canDelete, 
                   value={broker.session_store}
                   onChange={(e) => updateField("session_store", e.target.value)}
                   onBlur={onSave}
+                  onKeyDown={(e) => e.key === 'Enter' && onSave()}
                   placeholder="Optional path to session store"
                 />
               </div>

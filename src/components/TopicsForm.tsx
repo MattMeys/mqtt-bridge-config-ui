@@ -98,6 +98,7 @@ export function TopicsForm({ topics, onChange, onSave }: TopicsFormProps) {
               value={topic.topic}
               onChange={(e) => updateTopic(index, "topic", e.target.value)}
               onBlur={onSave}
+              onKeyDown={(e) => e.key === 'Enter' && onSave()}
               placeholder="topic/pattern"
               className="h-6 px-2 py-0 text-sm text-center bg-background focus:bg-primary-foreground focus:border-0 focus-visible:ring-1 focus-visible:ring-offset-0 whitespace-nowrap"
               style={{ width: Math.max(100, Math.ceil(topic.topic.length * 8)) + "px" }}
