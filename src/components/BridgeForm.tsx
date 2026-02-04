@@ -40,7 +40,7 @@ function BridgeStatusIcon({ state }: { state?: BridgeState }) {
   if (!state) return null;
   
   const statusLabels: Record<BridgeState, string> = {
-    started: "Bridge Started",
+    started: "Bridge Running",
     starting: "Bridge Starting",
     stopping: "Bridge Stopping",
     stopped: "Bridge Stopped",

@@ -91,56 +91,62 @@ interface BrokerStatusMap {
   [key: string]: BrokerState; // key format: "bridgeName/instanceName"
 }
 
-function SystemStatusIcon({ state }: { state?: BridgesSystemState | null }) {
-  if (!state) return null;
-  
-  const statusLabels: Record<BridgesSystemState, string> = {
-    started: "System Started",
-    starting: "System Starting",
-    stopping: "System Stopping",
-    stopped: "System Stopped",
+function SystemStatusText({ state, startTime }: { state?: BridgesSystemState | null; startTime: number | null }) {
+  const [uptime, setUptime] = useState<number>(0);
+
+  useEffect(() => {
+    if (state === "started" && startTime) {
+      const interval = setInterval(() => {
+        setUptime(Math.floor((Date.now() - startTime) / 1000));
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [state, startTime]);
+
+  const formatUptime = (seconds: number): string => {
+    if (seconds < 60) {
+      return `${seconds} sec`;
+    } else if (seconds < 3600) {
+      const minutes = Math.floor(seconds / 60);
+      return `${minutes} min`;
+    } else {
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      return `${hours} h ${minutes} min`;
+    }
   };
-  
+
+  if (!state) return null;
+
+  let statusText = "";
+  let statusColor = "";
+
   switch (state) {
-    case "started":
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Circle className="h-5 w-5 fill-green-500 text-green-500" />
-          </TooltipTrigger>
-          <TooltipContent>{statusLabels.started}</TooltipContent>
-        </Tooltip>
-      );
     case "starting":
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Loader2 className="h-5 w-5 text-yellow-500 animate-spin" />
-          </TooltipTrigger>
-          <TooltipContent>{statusLabels.starting}</TooltipContent>
-        </Tooltip>
-      );
+      statusText = "system pending...";
+      statusColor = "text-yellow-600";
+      break;
+    case "started":
+      statusText = `system running - uptime: ${formatUptime(uptime)}`;
+      statusColor = "text-green-600";
+      break;
     case "stopping":
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Loader2 className="h-5 w-5 text-orange-500 animate-spin" />
-          </TooltipTrigger>
-          <TooltipContent>{statusLabels.stopping}</TooltipContent>
-        </Tooltip>
-      );
+      statusText = "shutting down";
+      statusColor = "text-orange-600";
+      break;
     case "stopped":
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Circle className="h-5 w-5 fill-red-500 text-red-500" />
-          </TooltipTrigger>
-          <TooltipContent>{statusLabels.stopped}</TooltipContent>
-        </Tooltip>
-      );
+      statusText = "system down";
+      statusColor = "text-red-600";
+      break;
     default:
       return null;
   }
+
+  return (
+    <div className={`text-sm font-medium ${statusColor}`}>
+      {statusText}
+    </div>
+  );
 }
 
 export default function App() {
@@ -153,6 +159,7 @@ export default function App() {
   const [bridgeStates, setBridgeStates] = useState<BridgeStatusMap>({});
   const [brokerStates, setBrokerStates] = useState<BrokerStatusMap>({});
   const [bridgesSystemState, setBridgesSystemState] = useState<BridgesSystemState | null>(null);
+  const [systemStartTime, setSystemStartTime] = useState<number | null>(null);
   
   // Keep track of the last saved config for generating patches
   const lastSavedConfigRef = useRef<BridgesConfig | null>(null);
@@ -200,7 +207,6 @@ export default function App() {
       // Handle connection opened
       eventSource.onopen = () => {
         console.log("SSE connection established");
-        toast.info("Connected to server events");
       };
 
       // Handle all bridge and broker events
@@ -263,26 +269,15 @@ export default function App() {
             // Update system state
             if (eventName === "bridges_starting") {
               setBridgesSystemState("starting");
+              setSystemStartTime(null);
             } else if (eventName === "bridges_started") {
               setBridgesSystemState("started");
+              setSystemStartTime(Date.now());
             } else if (eventName === "bridges_stopping") {
               setBridgesSystemState("stopping");
             } else if (eventName === "bridges_stopped") {
               setBridgesSystemState("stopped");
-            }
-
-            
-            // Update bridge status for relevant events
-            if (eventName === "bridges_started" && data.at) {
-              setBridgesStatus({
-                state: "running",
-                since: data.at,
-              });
-            } else if (eventName === "bridges_stopped" && data.at) {
-              setBridgesStatus({
-                state: "stopped",
-                since: data.at,
-              });
+              setSystemStartTime(null);
             }
           } catch (error) {
             console.error(`Error handling SSE event [${eventName}]:`, error, event);
@@ -545,7 +540,7 @@ export default function App() {
             {bridgesSystemState && (
               // Status indicator for overall bridge system
               <div className="flex items-center gap-4">
-                <SystemStatusIcon state={bridgesSystemState} />
+                <SystemStatusText state={bridgesSystemState} startTime={systemStartTime} />
               </div>
             )}
           </div>
