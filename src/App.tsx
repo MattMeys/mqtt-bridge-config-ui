@@ -193,62 +193,74 @@ export default function App() {
       // Handle connection opened
       eventSource.onopen = () => {
         console.log("SSE connection established");
+        toast.info("Connected to server events");
       };
 
-      // Handle bridge_started event
-      eventSource.addEventListener("bridge_start", (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          setBridgeStatus({
-            state: "running",
-            since: data.at,
-          });
-          toast.success("Bridge started", {
-            description: `Started at ${new Date(data.at).toLocaleString()}`,
-          });
-        } catch (error) {
-          console.error("Failed to parse bridge_started event:", error);
-        }
-      });
+      // Handle all bridge and broker events
+      const events = [
+        "bridges_starting",
+        "bridges_started",
+        "bridges_stopping",
+        "bridges_stopped",
+        "bridge_disabled",
+        "bridge_starting",
+        "bridge_started",
+        "bridge_stopping",
+        "bridge_stopped",
+        "broker_disabled",
+        "broker_connecting",
+        "broker_connected",
+        "broker_disconnecting",
+        "broker_disconnected",
+      ];
 
-      // Handle bridge_stopped event
-      eventSource.addEventListener("bridge_stopped", (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          setBridgeStatus({
-            state: "stopped",
-            since: data.at,
-          });
-          toast.info("Bridge stopped", {
-            description: `Stopped at ${new Date(data.at).toLocaleString()}`,
-          });
-        } catch (error) {
-          console.error("Failed to parse bridge_stopped event:", error);
-        }
-      });
-
-      // Handle broker_connected event
-      eventSource.addEventListener("broker_connected", (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          toast.success("Broker connected", {
-            description: `${data.instance} connected at ${new Date(data.at).toLocaleString()}`,
-          });
-        } catch (error) {
-          console.error("Failed to parse broker_connected event:", error);
-        }
-      });
-
-      // Handle broker_disconnected event
-      eventSource.addEventListener("broker_disconnected", (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          toast.warning("Broker disconnected", {
-            description: `${data.instance} disconnected at ${new Date(data.at).toLocaleString()}`,
-          });
-        } catch (error) {
-          console.error("Failed to parse broker_disconnected event:", error);
-        }
+      events.forEach((eventName) => {
+        eventSource.addEventListener(eventName, (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log(`SSE Event [${eventName}]:`, data);
+            
+            // Generate human-readable message
+            let message = eventName.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+            if (data.name) {
+              message += `: ${data.name}`;
+            } else if (data.bridge && data.instance) {
+              message += `: ${data.bridge}/${data.instance}`;
+            }
+            if (data.at) {
+              message += ` (${data.at})`;
+            }
+            
+            // Show toast based on event type
+            if (eventName.includes("started") || eventName.includes("connected")) {
+              toast.success(message);
+            } else if (eventName.includes("stopped") || eventName.includes("disconnected") || eventName.includes("disabled")) {
+              toast.error(message);
+            } else if (eventName.includes("starting") || eventName.includes("connecting")) {
+              toast.info(message);
+            } else if (eventName.includes("stopping") || eventName.includes("disconnecting")) {
+              toast.warning(message);
+            } else {
+              toast.info(message);
+            }
+            
+            // Update bridge status for relevant events
+            if (eventName === "bridges_started" && data.at) {
+              setBridgeStatus({
+                state: "running",
+                since: data.at,
+              });
+            } else if (eventName === "bridges_stopped" && data.at) {
+              setBridgeStatus({
+                state: "stopped",
+                since: data.at,
+              });
+            }
+          } catch (error) {
+            console.error(`Error handling SSE event [${eventName}]:`, error, event);
+            toast.error(`Error processing ${eventName} event`);
+          }
+        });
       });
 
       eventSource.onerror = (error) => {
