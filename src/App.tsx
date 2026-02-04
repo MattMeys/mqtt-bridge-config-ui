@@ -97,10 +97,10 @@ function SystemStatusText({ state, startTime }: { state?: BridgesSystemState | n
   useEffect(() => {
     if (state === "started" && startTime) {
       // Set initial uptime
-      setUptime(Math.floor((Date.now() - startTime) / 1000));
+      setUptime(Math.max(0, Math.floor((Date.now() - startTime) / 1000)));
       // Then update every second
       const interval = setInterval(() => {
-        setUptime(Math.floor((Date.now() - startTime) / 1000));
+        setUptime(Math.max(0, Math.floor((Date.now() - startTime) / 1000)));
       }, 1000);
       return () => clearInterval(interval);
     }
@@ -122,7 +122,7 @@ function SystemStatusText({ state, startTime }: { state?: BridgesSystemState | n
   if (!state) return null;
 
   let statusText = "";
-  let statusColor = "muted-foreground";
+  let statusColor = "text-muted-foreground";
 
   switch (state) {
     case "starting":
@@ -234,7 +234,7 @@ export default function App() {
         eventSource.addEventListener(eventName, (event) => {
           try {
             const data = JSON.parse(event.data);
-            console.log(`SSE Event [${eventName}]:`, data);
+            // console.log(`SSE Event [${eventName}]:`, data);
             
             // Update bridge states
             if (eventName === "bridge_disabled" && data.name) {
@@ -544,7 +544,7 @@ export default function App() {
             </div>
             {bridgesSystemState && (
               // Status indicator for overall bridge system
-              <div className="flex items-end gap-4">
+              <div className="flex h-max items-end gap-4">
                 <SystemStatusText state={bridgesSystemState} startTime={systemStartTime} />
               </div>
             )}
