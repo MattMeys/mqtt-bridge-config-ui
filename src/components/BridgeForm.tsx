@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "./ui/alert";
 import { AlertCircle } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import { Checkbox } from "./ui/checkbox";
+import { Tooltip, TooltipTrigger, TooltipContent } from "./ui/tooltip";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -38,17 +39,60 @@ interface BridgeFormProps {
 function BridgeStatusIcon({ state }: { state?: BridgeState }) {
   if (!state) return null;
   
+  const statusLabels: Record<BridgeState, string> = {
+    started: "Bridge Started",
+    starting: "Bridge Starting",
+    stopping: "Bridge Stopping",
+    stopped: "Bridge Stopped",
+    disabled: "Bridge Disabled",
+  };
+  
   switch (state) {
     case "started":
-      return <Circle className="h-4 w-4 fill-green-500 text-green-500" title="Started" />;
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Circle className="h-4 w-4 fill-green-500 text-green-500" />
+          </TooltipTrigger>
+          <TooltipContent>{statusLabels.started}</TooltipContent>
+        </Tooltip>
+      );
     case "starting":
-      return <Loader2 className="h-4 w-4 text-yellow-500 animate-spin" title="Starting..." />;
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Loader2 className="h-4 w-4 text-yellow-500 animate-spin" />
+          </TooltipTrigger>
+          <TooltipContent>{statusLabels.starting}</TooltipContent>
+        </Tooltip>
+      );
     case "stopping":
-      return <Loader2 className="h-4 w-4 text-orange-500 animate-spin" title="Stopping..." />;
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Loader2 className="h-4 w-4 text-orange-500 animate-spin" />
+          </TooltipTrigger>
+          <TooltipContent>{statusLabels.stopping}</TooltipContent>
+        </Tooltip>
+      );
     case "stopped":
-      return <Circle className="h-4 w-4 fill-red-500 text-red-500" title="Stopped" />;
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Circle className="h-4 w-4 fill-red-500 text-red-500" />
+          </TooltipTrigger>
+          <TooltipContent>{statusLabels.stopped}</TooltipContent>
+        </Tooltip>
+      );
     case "disabled":
-      return <Circle className="h-4 w-4 fill-gray-400 text-gray-400" title="Disabled" />;
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Circle className="h-4 w-4 fill-gray-400 text-gray-400" />
+          </TooltipTrigger>
+          <TooltipContent>{statusLabels.disabled}</TooltipContent>
+        </Tooltip>
+      );
     default:
       return null;
   }

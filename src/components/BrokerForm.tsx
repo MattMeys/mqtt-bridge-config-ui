@@ -10,6 +10,7 @@ import { TopicsForm } from "./TopicsForm";
 import { NetworkAddressForm } from "./NetworkAddressForm";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import { Checkbox } from "./ui/checkbox";
+import { Tooltip, TooltipTrigger, TooltipContent } from "./ui/tooltip";
 import { useState } from "react";
 
 type BrokerState = "disabled" | "connecting" | "connected" | "disconnecting" | "disconnected";
@@ -17,17 +18,60 @@ type BrokerState = "disabled" | "connecting" | "connected" | "disconnecting" | "
 function BrokerStatusIcon({ state }: { state?: BrokerState }) {
   if (!state) return null;
   
+  const statusLabels: Record<BrokerState, string> = {
+    connected: "Broker Connected",
+    connecting: "Broker Connecting",
+    disconnecting: "Broker Disconnecting",
+    disconnected: "Broker Disconnected",
+    disabled: "Broker Disabled",
+  };
+  
   switch (state) {
     case "connected":
-      return <Circle className="h-3.5 w-3.5 fill-green-500 text-green-500" title="Connected" />;
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Circle className="h-3.5 w-3.5 fill-green-500 text-green-500" />
+          </TooltipTrigger>
+          <TooltipContent>{statusLabels.connected}</TooltipContent>
+        </Tooltip>
+      );
     case "connecting":
-      return <Loader2 className="h-3.5 w-3.5 text-yellow-500 animate-spin" title="Connecting..." />;
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Loader2 className="h-3.5 w-3.5 text-yellow-500 animate-spin" />
+          </TooltipTrigger>
+          <TooltipContent>{statusLabels.connecting}</TooltipContent>
+        </Tooltip>
+      );
     case "disconnecting":
-      return <Loader2 className="h-3.5 w-3.5 text-orange-500 animate-spin" title="Disconnecting..." />;
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Loader2 className="h-3.5 w-3.5 text-orange-500 animate-spin" />
+          </TooltipTrigger>
+          <TooltipContent>{statusLabels.disconnecting}</TooltipContent>
+        </Tooltip>
+      );
     case "disconnected":
-      return <Circle className="h-3.5 w-3.5 fill-red-500 text-red-500" title="Disconnected" />;
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Circle className="h-3.5 w-3.5 fill-red-500 text-red-500" />
+          </TooltipTrigger>
+          <TooltipContent>{statusLabels.disconnected}</TooltipContent>
+        </Tooltip>
+      );
     case "disabled":
-      return <Circle className="h-3.5 w-3.5 fill-gray-400 text-gray-400" title="Disabled" />;
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Circle className="h-3.5 w-3.5 fill-gray-400 text-gray-400" />
+          </TooltipTrigger>
+          <TooltipContent>{statusLabels.disabled}</TooltipContent>
+        </Tooltip>
+      );
     default:
       return null;
   }
