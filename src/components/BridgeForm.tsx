@@ -164,6 +164,7 @@ export function BridgeForm({ bridge, index, bridgeState, brokerStates, onChange,
                     key={brokerIndex}
                     broker={broker}
                     bridgeName={bridge.name}
+                    bridgeDisabled={bridge.disabled}
                     index={brokerIndex}
                     brokerState={brokerStates[`${bridge.name}/${broker.network.instance_name}`]}
                     canDelete={bridge.brokers.length > 2}

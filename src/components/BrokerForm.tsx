@@ -54,6 +54,7 @@ function getNetworkAddress(network: Network): string {
 interface BrokerFormProps {
   broker: Broker;
   bridgeName: string;
+  bridgeDisabled: boolean;
   index: number;
   brokerState?: BrokerState;
   canDelete: boolean;
@@ -62,7 +63,7 @@ interface BrokerFormProps {
   onDelete: () => void;
 }
 
-export function BrokerForm({ broker, bridgeName, index, brokerState, canDelete, onChange, onSave, onDelete }: BrokerFormProps) {
+export function BrokerForm({ broker, bridgeName, bridgeDisabled, index, brokerState, canDelete, onChange, onSave, onDelete }: BrokerFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   
   const updateField = <K extends keyof Broker>(field: K, value: Broker[K]) => {
@@ -125,7 +126,7 @@ export function BrokerForm({ broker, bridgeName, index, brokerState, canDelete, 
             />
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <BrokerStatusIcon state={brokerState} />
+            {!bridgeDisabled && <BrokerStatusIcon state={brokerState} />}
             <Checkbox
               style={{ borderColor: "var(--primary)" }}
               id={`broker-enabled-${index}`}
