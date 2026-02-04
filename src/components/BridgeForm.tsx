@@ -52,7 +52,7 @@ export function BridgeForm({ bridge, index, onChange, onSave, onDelete, onDuplic
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card className={`border-2 ${bridge.disabled ? 'opacity-50' : ''}`}>
+      <Card className={`border-2 bg-secondary ${bridge.disabled ? 'opacity-50' : ''}`}>
         <CardHeader className={`flex flex-row items-center gap-3 space-y-0 pb-3 pt-3 bg-primary ${isOpen ? 'rounded-t-lg' : 'rounded-lg'}`}>
           <CollapsibleTrigger className="flex items-center gap-2 hover:opacity-70 transition-opacity flex-shrink-0">
             <ChevronDown className={`h-4 w-4 transition-transform text-primary-foreground ${isOpen ? 'rotate-180' : ''}`} />
